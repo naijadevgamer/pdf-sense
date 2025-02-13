@@ -4,7 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 
 const sora = Sora({
-  variable: "--font-geist-mono",
+  variable: "--font-sora",
   subsets: ["latin"],
 });
 
@@ -21,7 +21,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={cn("min-h-screen antialiased", `${sora.className}`)}>
+      <body
+        className={cn("min-h-screen antialiased grainy", `${sora.className}`)}
+      >
         {children}
       </body>
     </html>
