@@ -5,7 +5,7 @@ const MaxWidthWrapper = ({
   className,
   children,
 }: {
-  className: String;
+  className?: String;
   children: ReactNode;
 }) => {
   return (
