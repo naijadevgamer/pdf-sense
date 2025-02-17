@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Sora } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import Navbar from "@/components/Navbar";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body
         className={cn("min-h-screen antialiased grainy", `${sora.className}`)}
       >
+        <Navbar />
         {children}
       </body>
     </html>
