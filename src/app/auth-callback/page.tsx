@@ -11,25 +11,28 @@ const Page = () => {
   const searchParams = useSearchParams();
   const origin = searchParams.get("origin");
 
-  const { data, isLoading, error } = trpc.authCallback.useQuery(undefined, {
+  const { data, error } = trpc.authCallback.useQuery(undefined, {
     queryKey: ["authCallback", undefined],
     retry: true,
     retryDelay: 500,
   });
 
+  useEffect(() => {
+    console.log("Auth callback data:", data);
+    console.log("Auth callback error:", error);
+  }, [data, error]);
+
   // Handle success and error cases in `useEffect`
   useEffect(() => {
     if (data?.success) {
-      // User is synced to DB, redirect
       router.push(origin ? `/${origin}` : "/dashboard");
-    }
-  }, [data, router, origin]);
-
-  useEffect(() => {
-    if (error?.data?.code === "UNAUTHORIZED") {
+    } else if (error?.data?.code === "UNAUTHORIZED") {
       router.push("/sign-in");
+    } else if (error) {
+      console.error("Auth callback error:", error);
+      router.push("/error-page"); // Redirect to an error page instead of looping
     }
-  }, [error, router]);
+  }, [data, error, router, origin]);
 
   return (
     <div className="w-full mt-24 flex justify-center">
