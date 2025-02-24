@@ -1,5 +1,5 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { publicProcedure, router } from "./trpc";
+import { privateProcedure, publicProcedure, router } from "./trpc";
 import { TRPCError } from "@trpc/server";
 import { db } from "@/db";
 
@@ -11,12 +11,6 @@ export const appRouter = router({
     if (!user || !user.id || !user.email) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
-
-    // Check if user exists in the database (optional, but recommended)
-
-    // if (!user?.id || !user?.email) {
-    //   throw new TRPCError({ code: "UNAUTHORIZED" });
-    // }
 
     // ✅ Check if user exists in your database
     const existingUser = await db.user.findUnique({
@@ -36,6 +30,15 @@ export const appRouter = router({
     }
 
     return { success: true };
+  }),
+  getUserFiles: privateProcedure.query(async ({ ctx }) => {
+    const { userId } = ctx;
+
+    return await db.file.findMany({
+      where: {
+        userId,
+      },
+    });
   }),
 });
 
