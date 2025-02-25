@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
 import Providers from "@/components/Provider";
+import "react-loading-skeleton/dist/skeleton.css";
 
 const sora = Sora({
   variable: "--font-sora",
