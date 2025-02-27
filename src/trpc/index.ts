@@ -32,6 +32,7 @@ export const appRouter = router({
 
     return { success: true };
   }),
+
   getUserFiles: privateProcedure.query(async ({ ctx }) => {
     const { userId } = ctx;
 
@@ -41,6 +42,28 @@ export const appRouter = router({
       },
     });
   }),
+
+  getFile: privateProcedure
+    .input(z.object({ key: z.string() })) // Accepts fileId as input
+    .mutation(async ({ ctx, input }) => {
+      const { userId } = ctx;
+      const { key } = input;
+
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const file = await db.file.findFirst({
+        where: {
+          key: key,
+          userId, // Ensures the file belongs to the authenticated user
+        },
+      });
+
+      if (!file) throw new TRPCError({ code: "NOT_FOUND" });
+
+      console.log("file", file);
+
+      return file;
+    }),
 
   deleteFile: privateProcedure
     .input(z.object({ id: z.string() }))
