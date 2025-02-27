@@ -15,6 +15,7 @@ import Skeleton from "react-loading-skeleton";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const Dashboard = () => {
   const [currentlyDeletingFile, setCurrentlyDeletingFile] = useState<
@@ -27,6 +28,9 @@ const Dashboard = () => {
   const { mutate: deleteFile } = trpc.deleteFile.useMutation({
     onSuccess: () => {
       utils.getUserFiles.invalidate();
+      toast.success("File deleted successfully", {
+        style: { backgroundColor: "#16a34a", color: "white" }, // Green for success
+      });
     },
     onMutate({ id }) {
       setCurrentlyDeletingFile(id);
