@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
 import Providers from "@/components/Provider";
 import "react-loading-skeleton/dist/skeleton.css";
+import { Toaster } from "@/components/ui/sonner";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -28,6 +29,7 @@ export default function RootLayout({
         <body
           className={cn("min-h-screen antialiased grainy", `${sora.className}`)}
         >
+          <Toaster />
           <Navbar />
           {children}
         </body>
