@@ -6,25 +6,30 @@ import { Dialog, DialogTrigger, DialogContent, DialogTitle } from "./ui/dialog";
 import Dropzone from "react-dropzone";
 import { File, Loader2, UploadCloud } from "lucide-react";
 import { Progress } from "./ui/progress";
+import { toast } from "sonner";
+import { trpc } from "@/app/_trpc/client";
+import { useUploadThing } from "@/lib/uploadthing";
+import { useRouter } from "next/navigation";
 
 const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
-  // const router = useRouter();
+  const router = useRouter();
 
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  // const { toast } = useToast();
 
-  // const { startUpload } = useUploadThing(
-  //   isSubscribed ? "proPlanUploader" : "freePlanUploader"
-  // );
+  const { startUpload } = useUploadThing("fileUploader");
 
-  // const { mutate: startPolling } = trpc.getFile.useMutation({
-  //   onSuccess: (file) => {
-  //     router.push(`/dashboard/${file.id}`);
-  //   },
-  //   retry: true,
-  //   retryDelay: 500,
-  // });
+  const { mutate: startPolling } = trpc.getFile.useMutation({
+    onSuccess: (file) => {
+      toast.success("successfully uploaded");
+      router.push(`/dashboard/${file.id}`);
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+    retry: true,
+    retryDelay: 500,
+  });
 
   const startSimulatedProgress = () => {
     setUploadProgress(0);
@@ -51,32 +56,24 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
         const progressInterval = startSimulatedProgress();
 
         // handle file uploading
-        // const res = await startUpload(acceptedFile);
+        const res = await startUpload(acceptedFile);
 
-        // if (!res) {
-        //   return toast({
-        //     title: "Something went wrong",
-        //     description: "Please try again later",
-        //     variant: "destructive",
-        //   });
-        // }
+        if (!res) {
+          return toast.error("Something went wrong! Please try again later");
+        }
 
-        // const [fileResponse] = res;
+        const [fileResponse] = res;
 
-        // const key = fileResponse?.key;
+        const key = fileResponse?.key;
 
-        // if (!key) {
-        //   return toast({
-        //     title: "Something went wrong",
-        //     description: "Please try again later",
-        //     variant: "destructive",
-        //   });
-        // }
+        if (!key) {
+          return toast.error("Something went wrong! Please try again later");
+        }
 
         clearInterval(progressInterval);
         setUploadProgress(100);
 
-        // startPolling({ key });
+        startPolling({ key });
       }}
     >
       {({ getRootProps, getInputProps, acceptedFiles }) => (
