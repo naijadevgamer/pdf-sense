@@ -29,8 +29,11 @@ const Dashboard = () => {
     onSuccess: () => {
       utils.getUserFiles.invalidate();
       toast.success("File deleted successfully", {
-        style: { backgroundColor: "#16a34a", color: "white" }, // Green for success
+        style: { backgroundColor: "#28A745", color: "white" }, // Green for success
       });
+      // toast.success("File deleted successfully", {
+      //   style: { backgroundColor: "#DC3545", color: "white" }, // Green for success
+      // });
     },
     onMutate({ id }) {
       setCurrentlyDeletingFile(id);

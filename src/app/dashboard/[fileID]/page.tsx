@@ -1,3 +1,4 @@
+import PdfRenderer from "@/components/PdfRenderer";
 import { db } from "@/db";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { notFound, redirect } from "next/navigation";
@@ -33,7 +34,7 @@ const Page = async ({ params }: { params: Promise<PageProps> }) => {
         <div className="flex-1 xl:flex">
           <div className="px-4 py-6 sm:px-6 lg:pl-8 xl:flex-1 xl:pl-6">
             {/* Main area */}
-            {/* <PdfRenderer url={file.url} /> */}
+            <PdfRenderer url={file.url} />
           </div>
         </div>
 
