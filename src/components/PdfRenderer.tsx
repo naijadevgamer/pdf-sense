@@ -30,7 +30,7 @@ import {
 } from "./ui/dropdown-menu";
 
 import SimpleBar from "simplebar-react";
-// import PdfFullscreen from "./PdfFullscreen";
+import PdfFullscreen from "./PdfFullscreen";
 import { toast } from "sonner";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -68,8 +68,6 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
     resolver: zodResolver(CustomPageValidator),
   });
 
-  console.log(errors);
-
   const { width, ref } = useResizeDetector();
 
   const handlePageSubmit = ({ page }: TCustomPageValidator) => {
@@ -78,9 +76,10 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
   };
 
   return (
-    <div className="w-full bg-white rounded-md shadow flex flex-col items-center">
-      <div className="h-14 w-full border-b border-zinc-200 flex items-center justify-between px-2">
-        <div className="flex items-center gap-1.5">
+    <div className="w-full bg-white rounded-md shadow overflow-hidden flex flex-col items-center">
+      {/* PDF Control bar top */}
+      <div className="min-h-14 w-full border-b border-zinc-200 flex items-center justify-between px-2">
+        <div className="flex items-center gap-1.5 ">
           <Button
             disabled={currPage <= 1}
             onClick={() => {
@@ -88,17 +87,20 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
               setValue("page", String(currPage - 1));
             }}
             variant="ghost"
+            className="h-auto px-1 py-0.5 sm:h-10 sm:px-4 sm:py-2"
             aria-label="previous page"
           >
-            <ChevronDown className="size-4" />
+            <ChevronUp className="size-2 sm:size-4" />
           </Button>
 
           <div className="flex items-center gap-1.5">
             <Input
               {...register("page")}
               className={cn(
-                "size-8",
-                errors.page && "focus-visible:ring-red-500"
+                "size-6 sm:size-8 text-center p-0 rounded-sm ",
+                errors.page
+                  ? "focus-visible:ring-red-500"
+                  : "focus-visible:ring-primary"
               )}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -120,20 +122,27 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
               );
               setValue("page", String(currPage + 1));
             }}
+            className="h-auto px-1 py-0.5 sm:h-10 sm:px-4 sm:py-2"
             variant="ghost"
             aria-label="next page"
           >
-            <ChevronUp className="h-4 w-4" />
+            <ChevronDown className="size-2 sm:size-4" />
           </Button>
         </div>
 
-        <div className="space-x-2">
+        <div className="space-x-2 flex flex-wrap justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="gap-1.5" aria-label="zoom" variant="ghost">
-                <Search className="h-4 w-4" />
+              <Button
+                className={cn(
+                  "gap-1 sm:gap-1.5 h-auto px-1.5 py-1 sm:h-10 sm:px-4 sm:py-2 sm:bg-transparent bg-zinc-200 rounded-sm"
+                )}
+                aria-label="zoom"
+                variant="ghost"
+              >
+                <Search className="size-2 sm:size-4" />
                 {scale * 100}%
-                <ChevronDown className="h-3 w-3 opacity-50" />
+                <ChevronDown className="size-2 sm:size-3 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -152,20 +161,24 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button
-            onClick={() => setRotation((prev) => prev + 90)}
-            variant="ghost"
-            aria-label="rotate 90 degrees"
-          >
-            <RotateCw className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center">
+            <Button
+              onClick={() => setRotation((prev) => prev + 90)}
+              variant="ghost"
+              aria-label="rotate 90 degrees"
+              className="h-auto px-1.5 py-1 sm:h-10 sm:px-4 sm:py-2"
+            >
+              <RotateCw className="size-2 sm:size-4" />
+            </Button>
 
-          {/* <PdfFullscreen fileUrl={url} /> */}
+            <PdfFullscreen fileUrl={url} />
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 w-full max-h-screen">
-        <SimpleBar autoHide={false} className="max-h-[calc(100vh-10rem)]">
+      {/* PDF Main */}
+      <div className="flex-1 w-full max-h-screen min-w-0">
+        <SimpleBar autoHide={false} className="max-h-[calc(100vh-8rem)]">
           <div ref={ref}>
             <Document
               loading={

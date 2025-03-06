@@ -35,9 +35,12 @@ const PdfFullscreen = ({ fileUrl }: PdfFullscreenProps) => {
           <Expand className="size-2 sm:size-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-7xl w-full">
+      <DialogContent className="max-w-7xl w-full min-w-0">
         <DialogTitle className="hidden">PDF Viewer</DialogTitle>
-        <SimpleBar autoHide={false} className="max-h-[calc(100vh-10rem)] mt-6">
+        <SimpleBar
+          autoHide={false}
+          className="max-h-[calc(100vh-10rem)] mt-6 min-w-0"
+        >
           <div ref={ref}>
             <Document
               loading={
