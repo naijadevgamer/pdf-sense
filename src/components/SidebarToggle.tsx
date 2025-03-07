@@ -34,9 +34,7 @@ export const LeftSidebar = () => {
       )}
     >
       <div className="w-60 ">
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Natus, aliquid
-        mollitia. Cumque expedita, aliquid illum ipsam repudiandae odio
-        corrupti, fugiat, dolores quas iste natus eligendi at vitae fugit porro
+        t, dolores quas iste natus eligendi at vitae fugit porro
         itaque.
       </div>
     </div>
