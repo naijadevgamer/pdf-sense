@@ -1,3 +1,4 @@
+import ChatWrapper from "@/components/chat/ChatWrapper";
 import PdfRenderer from "@/components/PdfRenderer";
 import { LeftSidebar } from "@/components/SidebarToggle";
 import { db } from "@/db";
@@ -45,14 +46,7 @@ const Page = async ({ params }: { params: Promise<PageProps> }) => {
           </div>
 
           <div className="flex-[0.75] border-t border-gray-200 lg:flex-[0.35] lg:border-l lg:border-t-0">
-            {/* <ChatWrapper isSubscribed={plan.isSubscribed} fileId={file.id} /> */}
-            amet veniam totam cum provident molestias dolore repellat distinctio
-            fugit iure quibusdam voluptas quaerat iste assumenda asperiores
-            neque. Recusandae ipsam mollitia esse quod ipsum? Nam, dolor a.
-            Nobis aut veritatis, officia reiciendis possimus facere vitae totam
-            molestiae natus explicabo repudiandae tempore maxime nesciunt quas
-            numquam harum. Nisi repellendus eligendi adipisci, minus odio
-            praesentium consequuntur natus error officiis.
+            <ChatWrapper fileId={file.id} />
           </div>
         </div>
       </div>
