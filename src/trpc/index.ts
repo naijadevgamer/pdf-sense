@@ -65,6 +65,28 @@ export const appRouter = router({
       return file;
     }),
 
+  getFileUploadStatus: privateProcedure
+    .input(z.object({ fileId: z.string() })) // Accepts fileId as input
+    .query(async ({ ctx, input }) => {
+      const { userId } = ctx;
+      const { fileId } = input;
+
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const file = await db.file.findFirst({
+        where: {
+          id: fileId,
+          userId, // Ensures the file belongs to the authenticated user
+        },
+      });
+
+      if (!file) throw new TRPCError({ code: "NOT_FOUND" });
+
+      return {
+        status: file.uploadStatus,
+      };
+    }),
+
   deleteFile: privateProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
