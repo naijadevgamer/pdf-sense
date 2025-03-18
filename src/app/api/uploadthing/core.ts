@@ -1,7 +1,25 @@
 import { db } from "@/db";
+import { getPineconeClient } from "@/lib/pinecone";
+import { HfInference } from "@huggingface/inference";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
+
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY!);
+
+async function getHuggingFaceEmbeddings(text: string) {
+  const response = await hf.featureExtraction({
+    model: "sentence-transformers/all-MiniLM-L6-v2",
+    inputs: text,
+  });
+
+  if (Array.isArray(response[0])) {
+    // If response is nested, flatten it
+    return response.flat() as number[];
+  }
+  return response as number[];
+}
 
 const f = createUploadthing();
 
@@ -55,8 +73,56 @@ export const ourFileRouter = {
         },
       });
 
-      // return { success: true };
-      // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
+      try {
+        const response = await fetch(`https://9syn0q6snr.ufs.sh/f/${file.key}`);
+
+        const blob = await response.blob();
+
+        const loader = new PDFLoader(blob, {});
+
+        const pageLevelDocs = await loader.load();
+
+        // const pagesAmt = pageLevelDocs.length;
+        // const pageNum = pageLevelDocs[0].metadata.loc.pageNumber;
+
+        // vectorize and index entire document
+        const pinecone = await getPineconeClient();
+        const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
+
+        for (const doc of pageLevelDocs) {
+          const text = doc.pageContent; // Extract text from PDF page
+          const embedding = await getHuggingFaceEmbeddings(text); // Get embeddings
+
+          await pineconeIndex.upsert([
+            {
+              id: `${createdFile.id}-${doc.metadata.loc.pageNumber}`, // Unique ID per page
+              values: embedding, // Store the embedding vector
+            },
+          ]);
+        }
+
+        await db.file.update({
+          data: {
+            uploadStatus: "SUCCESS",
+          },
+          where: {
+            id: createdFile.id,
+          },
+        });
+      } catch (err) {
+        console.error(err);
+        await db.file.update({
+          data: {
+            uploadStatus: "FAILED",
+          },
+          where: {
+            id: createdFile.id,
+          },
+        });
+      }
+
+      //   // return { success: true };
+      //   // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
       // return { uploadedBy: metadata.userId };
     }),
 } satisfies FileRouter;
