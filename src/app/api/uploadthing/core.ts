@@ -1,25 +1,10 @@
 import { db } from "@/db";
+import { getHuggingFaceEmbeddings } from "@/lib/huggingface";
 import { getPineconeClient } from "@/lib/pinecone";
-import { HfInference } from "@huggingface/inference";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
-
-const hf = new HfInference(process.env.HUGGINGFACE_API_KEY!);
-
-async function getHuggingFaceEmbeddings(text: string) {
-  const response = await hf.featureExtraction({
-    model: "sentence-transformers/all-MiniLM-L6-v2",
-    inputs: text,
-  });
-
-  if (Array.isArray(response[0])) {
-    // If response is nested, flatten it
-    return response.flat() as number[];
-  }
-  return response as number[];
-}
 
 const f = createUploadthing();
 
