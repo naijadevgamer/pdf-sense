@@ -5,6 +5,7 @@ import { ChevronLeft, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import ChatInput from "./ChatInput";
+import { ChatContextProvider } from "@/context/ChatContext";
 // import Messages from "./Messages";
 
 interface ChatWrapperProps {
@@ -79,15 +80,16 @@ const ChatWrapper = ({ fileId }: ChatWrapperProps) => {
     );
 
   return (
-    // <ChatContextProvider fileId={fileId}>
-    <div className="relative min-h-full bg-zinc-50 flex divide-y divide-zinc-200 flex-col justify-between gap-2">
-      <div className="flex-1 justify-between flex flex-col mb-28">
-        {/* <Messages fileId={fileId} /> */}
-      </div>
+    <ChatContextProvider fileId={fileId}>
+      <div className="relative min-h-full bg-zinc-50 flex divide-y divide-zinc-200 flex-col justify-between gap-2">
+        <div className="flex-1 justify-between flex flex-col mb-28">
+          {/* <Messages fileId={fileId} /> */}
+          <h1 className="text-6xl">Hello</h1>
+        </div>
 
-      <ChatInput />
-    </div>
-    // </ChatContextProvider>
+        <ChatInput />
+      </div>
+    </ChatContextProvider>
   );
 };
 
