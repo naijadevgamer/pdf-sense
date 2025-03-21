@@ -59,31 +59,52 @@ export const ourFileRouter = {
       });
 
       try {
+        console.log("Starting file processing...");
+        console.log(
+          "Fetching file from URL:",
+          `https://9syn0q6snr.ufs.sh/f/${file.key}`
+        );
+
         const response = await fetch(`https://9syn0q6snr.ufs.sh/f/${file.key}`);
+        console.log("File fetched successfully.");
 
         const blob = await response.blob();
+        console.log("File converted to blob.");
 
         const loader = new PDFLoader(blob, {});
+        console.log("PDFLoader initialized.");
 
         const pageLevelDocs = await loader.load();
+        console.log(`PDF loaded. Total pages: ${pageLevelDocs.length}`);
 
-        // const pagesAmt = pageLevelDocs.length;
-        // const pageNum = pageLevelDocs[0].metadata.loc.pageNumber;
-
-        // vectorize and index entire document
         const pinecone = await getPineconeClient();
+        console.log("Connected to Pinecone client.");
+
         const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
+        console.log("Pinecone index initialized.");
 
         for (const doc of pageLevelDocs) {
-          const text = doc.pageContent; // Extract text from PDF page
-          const embedding = await getHuggingFaceEmbeddings(text); // Get embeddings
+          const text = doc.pageContent;
+          console.log(
+            `Processing page ${doc.metadata.loc.pageNumber} with content:`,
+            text
+          );
+
+          const embedding = await getHuggingFaceEmbeddings(text);
+          console.log(
+            "Embedding generated for page:",
+            doc.metadata.loc.pageNumber
+          );
 
           await pineconeIndex.upsert([
             {
-              id: `${createdFile.id}-${doc.metadata.loc.pageNumber}`, // Unique ID per page
-              values: embedding, // Store the embedding vector
+              id: `${createdFile.id}-${doc.metadata.loc.pageNumber}`,
+              values: embedding,
             },
           ]);
+          console.log(
+            `Embedding stored for page ${doc.metadata.loc.pageNumber}`
+          );
         }
 
         await db.file.update({
@@ -94,8 +115,10 @@ export const ourFileRouter = {
             id: createdFile.id,
           },
         });
+        console.log("File processing completed successfully.");
       } catch (err) {
-        console.error(err);
+        console.error("Error occurred during file processing:", err);
+
         await db.file.update({
           data: {
             uploadStatus: "FAILED",
@@ -104,6 +127,7 @@ export const ourFileRouter = {
             id: createdFile.id,
           },
         });
+        console.log("File processing marked as FAILED.");
       }
 
       //   // return { success: true };

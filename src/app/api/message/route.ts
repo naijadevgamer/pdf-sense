@@ -39,32 +39,49 @@ export const POST = async (req: NextRequest) => {
       },
     });
 
+    console.log("Received message:", message);
+
     // Generate embeddings using Hugging Face
+    console.log("Generating embeddings for the message...");
     const embeddingResponse = await getHuggingFaceEmbeddings(message);
+    console.log("Embeddings generated successfully.");
 
     const embeddings = embeddingResponse;
 
     // Query Pinecone for similar vectors
+    console.log("Connecting to Pinecone client...");
     const pinecone = await getPineconeClient();
     const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
+    console.log("Pinecone index initialized. Querying Pinecone...");
 
     const searchResults = await pineconeIndex.query({
       vector: embeddings,
       topK: 4,
       includeMetadata: true,
     });
+    console.log(
+      "Pinecone query executed successfully. Search results:",
+      searchResults
+    );
 
     const retrievedText = searchResults.matches
       .map((match) => match.metadata?.text)
       .filter(Boolean)
       .join("\n");
 
+    console.log(
+      "Retrieved text from Pinecone:",
+      retrievedText || "No matches found."
+    );
+
     // Fetch previous messages
+    console.log("Fetching previous messages from database...");
     const prevMessages = await db.message.findMany({
       where: { fileId },
       orderBy: { createdAt: "asc" },
       take: 6,
     });
+    console.log(`Fetched ${prevMessages.length} previous messages.`);
 
     const formattedPrevMessages = prevMessages.map((msg) => ({
       role: msg.isUserMessage ? "user" : "assistant",
@@ -72,6 +89,7 @@ export const POST = async (req: NextRequest) => {
     }));
 
     // Construct AI prompt
+    console.log("Constructing AI prompt...");
     const aiPrompt = `
     Use the following context (or previous conversation if needed) to answer the user's question in markdown format.
     If you don't know the answer, just say that you don't know.
@@ -91,6 +109,8 @@ export const POST = async (req: NextRequest) => {
     USER INPUT: ${message}
     `;
 
+    console.log("AI prompt constructed. Sending request to AI model...");
+
     // Stream AI response
     const responseStream = hf.textGenerationStream({
       model: "mistralai/Mistral-7B-Instruct-v0.1",
@@ -105,6 +125,8 @@ export const POST = async (req: NextRequest) => {
       },
     });
 
+    console.log("AI response streaming initialized.");
+
     // Convert AsyncGenerator to ReadableStream
     const stream = new ReadableStream({
       async start(controller) {
@@ -112,13 +134,11 @@ export const POST = async (req: NextRequest) => {
         try {
           // Pull data from the AsyncGenerator
           for await (const chunk of responseStream) {
-            // Ensure chunk.generated_text is not null or undefined
             const text = chunk.generated_text;
             if (text != null) {
-              // Check for null or undefined values
-              controller.enqueue(text); // Enqueue the text from the chunk
-              generatedText += text; // Accumulate the text
-              console.log("Generated text:", text);
+              controller.enqueue(text);
+              generatedText += text;
+              console.log("Generated text chunk:", text);
             } else {
               console.warn(
                 "Warning: Received null or undefined text chunk, skipping."
@@ -126,10 +146,13 @@ export const POST = async (req: NextRequest) => {
             }
           }
 
-          // After the stream ends, perform onCompletion
-          await onCompletion(generatedText); // Pass accumulated text to onCompletion
+          console.log(
+            "AI response generation completed. Storing in database..."
+          );
+          await onCompletion(generatedText);
           controller.close();
         } catch (error) {
+          console.error("Error during AI response streaming:", error);
           controller.error(error);
         }
       },
@@ -137,7 +160,7 @@ export const POST = async (req: NextRequest) => {
 
     // Define onCompletion callback
     async function onCompletion(completion: string) {
-      // Store the final generated message in the database
+      console.log("Storing final AI-generated message in database...");
       await db.message.create({
         data: {
           text: completion,
@@ -146,6 +169,7 @@ export const POST = async (req: NextRequest) => {
           userId, // Ensure this is defined in your context
         },
       });
+      console.log("AI-generated message stored successfully.");
     }
 
     return new StreamingTextResponse(stream);
