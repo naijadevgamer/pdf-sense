@@ -1,12 +1,12 @@
 import { db } from "@/db";
+import { hf } from "@/lib/huggingface";
 import { getPineconeClient } from "@/lib/pinecone";
 import { SendMessageValidator } from "@/lib/validators/SendMessageValidator";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { HuggingFaceInference } from "@langchain/community/llms/hf";
+import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
 import { PineconeStore } from "@langchain/pinecone";
-import { NextRequest } from "next/server";
-import { getHuggingFaceEmbeddings, hf } from "@/lib/huggingface";
 import { StreamingTextResponse } from "ai";
+import { NextRequest } from "next/server";
 
 export const POST = async (req: NextRequest) => {
   try {
@@ -41,12 +41,15 @@ export const POST = async (req: NextRequest) => {
 
     console.log("Received message:", message);
 
-    // Generate embeddings using Hugging Face
+    // 1: vectorize message
+    // Initialize Hugging Face embeddings
     console.log("Generating embeddings for the message...");
-    const embeddingResponse = await getHuggingFaceEmbeddings(message);
-    console.log("Embeddings generated successfully.");
+    const embeddings = new HuggingFaceInferenceEmbeddings({
+      model: "sentence-transformers/all-MiniLM-L6-v2",
+      apiKey: process.env.HUGGINGFACE_API_KEY!, // Use your Hugging Face API key
+    });
 
-    const embeddings = embeddingResponse;
+    console.log("Embeddings generated successfully.");
 
     // Query Pinecone for similar vectors
     console.log("Connecting to Pinecone client...");
@@ -54,20 +57,18 @@ export const POST = async (req: NextRequest) => {
     const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
     console.log("Pinecone index initialized. Querying Pinecone...");
 
-    const searchResults = await pineconeIndex.query({
-      vector: embeddings,
-      topK: 4,
-      includeMetadata: true,
+    const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
+      pineconeIndex,
+      namespace: file.id,
     });
+
+    const results = await vectorStore.similaritySearch(message, 4);
     console.log(
       "Pinecone query executed successfully. Search results:",
-      searchResults
+      results
     );
 
-    const retrievedText = searchResults.matches
-      .map((match) => match.metadata?.text)
-      .filter(Boolean)
-      .join("\n");
+    const retrievedText = results.map((r) => r.pageContent).join("\n\n");
 
     console.log(
       "Retrieved text from Pinecone:",

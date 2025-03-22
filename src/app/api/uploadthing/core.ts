@@ -1,10 +1,12 @@
 import { db } from "@/db";
-import { getHuggingFaceEmbeddings } from "@/lib/huggingface";
+// import { getHuggingFaceEmbeddings } from "@/lib/huggingface";
 import { getPineconeClient } from "@/lib/pinecone";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
+import { PineconeStore } from "@langchain/pinecone";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
+import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
 
 const f = createUploadthing();
 
@@ -83,29 +85,21 @@ export const ourFileRouter = {
         const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
         console.log("Pinecone index initialized.");
 
-        for (const doc of pageLevelDocs) {
-          const text = doc.pageContent;
-          console.log(
-            `Processing page ${doc.metadata.loc.pageNumber} with content:`,
-            text
-          );
+        // Initialize Hugging Face embeddings
+        const embeddings = new HuggingFaceInferenceEmbeddings({
+          model: "sentence-transformers/all-MiniLM-L6-v2",
+          apiKey: process.env.HUGGINGFACE_API_KEY!, // Use your Hugging Face API key
+        });
 
-          const embedding = await getHuggingFaceEmbeddings(text);
-          console.log(
-            "Embedding generated for page:",
-            doc.metadata.loc.pageNumber
-          );
+        console.log("Embeddings generated");
 
-          await pineconeIndex.upsert([
-            {
-              id: `${createdFile.id}-${doc.metadata.loc.pageNumber}`,
-              values: embedding,
-            },
-          ]);
-          console.log(
-            `Embedding stored for page ${doc.metadata.loc.pageNumber}`
-          );
-        }
+        // Store all documents at once
+        await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
+          pineconeIndex,
+          namespace: createdFile.id,
+        });
+
+        console.log("Documents stored in Pinecone.");
 
         await db.file.update({
           data: {
@@ -129,10 +123,6 @@ export const ourFileRouter = {
         });
         console.log("File processing marked as FAILED.");
       }
-
-      //   // return { success: true };
-      //   // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
-      // return { uploadedBy: metadata.userId };
     }),
 } satisfies FileRouter;
 
