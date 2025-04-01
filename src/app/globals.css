@@ -84,3 +84,22 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+.toast-success {
+  background-color: #16a34a !important; /* Green */
+  color: white !important;
+}
+
+.toast-error {
+  background-color: #dc2626 !important; /* Red */
+  color: white !important;
+}
+
+.toast-warning {
+  background-color: #f59e0b !important; /* Yellow */
+  color: white !important;
+}
+
+.toast-white {
+  color: #f8f9fa !important;
+}
