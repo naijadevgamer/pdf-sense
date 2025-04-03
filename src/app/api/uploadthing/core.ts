@@ -1,5 +1,4 @@
 import { db } from "@/db";
-// import { getHuggingFaceEmbeddings } from "@/lib/huggingface";
 import { getPineconeClient } from "@/lib/pinecone";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
@@ -36,54 +35,47 @@ export const ourFileRouter = {
       return { userId: user.id };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      // This code RUNS ON YOUR SERVER after upload
-      // console.log("Upload complete for userId:", metadata.userId);
-
-      // console.log("file url", file.url);
-
-      // const isFileExist = await db.file.findFirst({
-      //   where: {
-      //     key: file.key,
-      //   },
-      // });
-
-      // if (isFileExist) return;
-
-      const createdFile = await db.file.create({
-        data: {
-          key: file.key,
-          name: file.name,
-          userId: metadata.userId,
-          // url: `https://uploadthing-prod.s3.us-west-2.amazonaws.com/${file.key}`,
-          url: `https://9syn0q6snr.ufs.sh/f/${file.key}`,
-          uploadStatus: "PROCESSING",
-        },
-      });
+      let createdFile;
+      try {
+        createdFile = await db.file.create({
+          data: {
+            key: file.key,
+            name: file.name,
+            userId: metadata.userId,
+            url: `https://9syn0q6snr.ufs.sh/f/${file.key}`,
+            uploadStatus: "PROCESSING",
+          },
+        });
+      } catch (error) {
+        // console.error("Database Error (Creating File):", error);
+        throw new Error("Failed to store file metadata");
+      }
 
       try {
-        console.log("Starting file processing...");
-        console.log(
-          "Fetching file from URL:",
-          `https://9syn0q6snr.ufs.sh/f/${file.key}`
-        );
+        // console.log("Starting file processing...");
+        // console.log(
+        //   "Fetching file from URL:",
+        //   `https://9syn0q6snr.ufs.sh/f/${file.key}`
+        // );
 
         const response = await fetch(`https://9syn0q6snr.ufs.sh/f/${file.key}`);
-        console.log("File fetched successfully.");
+        if (!response.ok) throw new Error("Failed to fetch file");
+        // console.log("File fetched successfully.");
 
         const blob = await response.blob();
-        console.log("File converted to blob.");
+        // console.log("File converted to blob.");
 
         const loader = new PDFLoader(blob, {});
-        console.log("PDFLoader initialized.");
+        // console.log("PDFLoader initialized.");
 
         const pageLevelDocs = await loader.load();
-        console.log(`PDF loaded. Total pages: ${pageLevelDocs.length}`);
+        // console.log(`PDF loaded. Total pages: ${pageLevelDocs.length}`);
 
         const pinecone = await getPineconeClient();
-        console.log("Connected to Pinecone client.");
+        // console.log("Connected to Pinecone client.");
 
         const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
-        console.log("Pinecone index initialized.");
+        // console.log("Pinecone index initialized.");
 
         // Initialize Hugging Face embeddings
         const embeddings = new HuggingFaceInferenceEmbeddings({
@@ -91,7 +83,7 @@ export const ourFileRouter = {
           apiKey: process.env.HUGGINGFACE_API_KEY!, // Use your Hugging Face API key
         });
 
-        console.log("Embeddings generated");
+        // console.log("Embeddings generated");
 
         // Store all documents at once
         await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
@@ -99,7 +91,7 @@ export const ourFileRouter = {
           namespace: createdFile.id,
         });
 
-        console.log("Documents stored in Pinecone.");
+        // console.log("Documents stored in Pinecone.");
 
         await db.file.update({
           data: {
@@ -109,9 +101,9 @@ export const ourFileRouter = {
             id: createdFile.id,
           },
         });
-        console.log("File processing completed successfully.");
+        // console.log("File processing completed successfully.");
       } catch (err) {
-        console.error("Error occurred during file processing:", err);
+        // console.error("Error occurred during file processing:", err);
 
         await db.file.update({
           data: {
@@ -121,7 +113,7 @@ export const ourFileRouter = {
             id: createdFile.id,
           },
         });
-        console.log("File processing marked as FAILED.");
+        // console.log("File processing marked as FAILED.");
       }
     }),
 } satisfies FileRouter;
