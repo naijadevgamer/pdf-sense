@@ -1,21 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import UploadButton from "./UploadButton";
 import { trpc } from "@/app/_trpc/client";
-import {
-  Ghost,
-  Loader2,
-  MessageSquare,
-  Plus,
-  Trash,
-  Trash2,
-} from "lucide-react";
-import Skeleton from "react-loading-skeleton";
-import Link from "next/link";
-import { Button } from "./ui/button";
 import { format } from "date-fns";
+import { Ghost, Loader2, MessageSquare, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import Skeleton from "react-loading-skeleton";
 import { toast } from "sonner";
+import { Button } from "./ui/button";
+import UploadButton from "./UploadButton";
 
 const Dashboard = () => {
   const [currentlyDeletingFile, setCurrentlyDeletingFile] = useState<
@@ -24,16 +17,49 @@ const Dashboard = () => {
 
   const utils = trpc.useUtils();
 
-  const { data: files, isLoading } = trpc.getUserFiles.useQuery();
+  const {
+    data: files,
+    isLoading,
+    error: filesError,
+  } = trpc.getUserFiles.useQuery(undefined, {
+    onError: (error) => {
+      toast.error("Failed to load files", {
+        description: error.message || "Something went wrong. Please try again.",
+      });
+    },
+  });
+
   const { mutate: deleteFile } = trpc.deleteFile.useMutation({
     onSuccess: () => {
       utils.getUserFiles.invalidate();
-      toast.success("File deleted successfully", {
-        style: { backgroundColor: "#28A745", color: "white" }, // Green for success
+      toast.success("File deleted successfully!", {
+        description: "The selected file has been removed from your account.",
       });
-      // toast.success("File deleted successfully", {
-      //   style: { backgroundColor: "#DC3545", color: "white" }, // Green for success
-      // });
+    },
+    onError: (error) => {
+      switch (error.data?.code) {
+        case "UNAUTHORIZED":
+          toast.error("Unauthorized Action", {
+            description: "You do not have permission to delete this file.",
+          });
+          break;
+        case "NOT_FOUND":
+          toast.error("File Not Found", {
+            description:
+              "The file may have already been deleted or does not exist.",
+          });
+          break;
+        case "FORBIDDEN":
+          toast.error("Access Denied", {
+            description: "You are not allowed to delete this file.",
+          });
+          break;
+        default:
+          toast.error("Failed to Delete File", {
+            description:
+              "There was an issue deleting the file. Please try again.",
+          });
+      }
     },
     onMutate({ id }) {
       setCurrentlyDeletingFile(id);
@@ -47,12 +73,28 @@ const Dashboard = () => {
     <main className="mx-auto max-w-7xl md:p-10">
       <div className="mt-8 flex flex-col items-start justify-between gap-4 border-b border-gray-200 pb-5 sm:flex-row sm:items-center sm:gap-0">
         <h1 className="mb-3 font-bold text-5xl text-gray-900">My Files</h1>
-
-        <UploadButton />
+        {files && files?.length > 0 ? <UploadButton /> : null}
       </div>
 
       {/* display all user files */}
-      {files && files.length !== 0 ? (
+      {filesError ? (
+        <div className="mt-16 flex flex-col items-center gap-2">
+          <Ghost className="size-10 text-destructive-foreground" />
+          <h3 className="font-semibold text-xl text-red-600">
+            Failed to load files
+          </h3>
+          <p>
+            {filesError.message ||
+              "Please check your connection and try again."}
+          </p>
+          <Button
+            onClick={() => utils.getUserFiles.invalidate()}
+            variant="outline"
+          >
+            Retry
+          </Button>
+        </div>
+      ) : files && files.length !== 0 ? (
         <ul className="mt-8 grid grid-cols-1 gap-6 divide-y divide-zinc-200 md:grid-cols-2 lg:grid-cols-3">
           {files
             .sort(
@@ -93,16 +135,20 @@ const Dashboard = () => {
                   </div>
 
                   <Button
-                    onClick={() => deleteFile({ id: file.id })}
+                    onClick={() => {
+                      deleteFile({ id: file.id });
+                    }}
                     size="sm"
                     className="w-full"
                     variant="destructive"
                   >
-                    {currentlyDeletingFile === file.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
+                    <div className="flex items-center justify-center gap-2 text-xs">
+                      {currentlyDeletingFile === file.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </div>
                   </Button>
                 </div>
               </li>
@@ -113,8 +159,14 @@ const Dashboard = () => {
       ) : (
         <div className="mt-16 flex flex-col items-center gap-2">
           <Ghost className="size-10 text-destructive-foreground" />
-          <h3 className="font-semibold text-xl">Pretty empty around here</h3>
-          <p>Let&apos;s upload your first PDF.</p>
+          <h3 className="font-semibold text-xl">
+            Looks like you don’t have any files yet
+          </h3>
+          <p>
+            Start by uploading your first PDF to get started. Just click the
+            button below!
+          </p>
+          <UploadButton />
         </div>
       )}
     </main>
