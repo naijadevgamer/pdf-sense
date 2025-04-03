@@ -7,9 +7,8 @@ import { ArrowRight } from "lucide-react";
 
 import Link from "next/link";
 import MaxWidthWrapper from "./MaxWidthWrapper";
-import { Button, buttonVariants } from "./ui/button";
+import { Button } from "./ui/button";
 import UserAccountNav from "./UserAccountNav";
-import SidebarToggle from "./SidebarToggle";
 
 const Navbar = async () => {
   const { getUser } = getKindeServerSession();
@@ -17,7 +16,6 @@ const Navbar = async () => {
 
   return (
     <nav className="sticky h-14 inset-x-0 top-0 z-30 w-full border-b border-gray-200 bg-white/75 backdrop-blur-lg transition-all">
-      <SidebarToggle />
       <MaxWidthWrapper>
         <div className="flex h-14 items-center justify-between border-b border-zinc-200">
           <Link href="/" className="flex z-40 font-semibold">
@@ -45,15 +43,9 @@ const Navbar = async () => {
               </>
             ) : (
               <>
-                <Link
-                  href="/dashboard"
-                  className={buttonVariants({
-                    variant: "ghost",
-                    size: "sm",
-                  })}
-                >
-                  Dashboard
-                </Link>
+                <Button asChild size={"sm"} variant={"ghost"}>
+                  <Link href="/dashboard">Dashboard</Link>
+                </Button>
 
                 <UserAccountNav
                   name={
