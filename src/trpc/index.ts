@@ -4,64 +4,145 @@ import { TRPCError } from "@trpc/server";
 import { db } from "@/db";
 import { z } from "zod";
 import { INFINITE_QUERY_LIMIT } from "@/config/infinite-query";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { utapi } from "@/app/api/uploadthing/route";
+import { getPineconeClient } from "@/lib/pinecone";
 
 export const appRouter = router({
   authCallback: publicProcedure.query(async () => {
-    const { getUser } = getKindeServerSession();
-    const user = await getUser(); // Properly await the Promise
+    try {
+      const { getUser } = getKindeServerSession();
+      const user = await getUser(); // Properly await the Promise
 
-    if (!user || !user.id || !user.email) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
-    }
+      if (!user || !user.id || !user.email) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User authentication failed. Please sign in again.",
+        });
+      }
 
-    // ✅ Check if user exists in your database
-    const existingUser = await db.user.findUnique({
-      where: { email: user.email },
-    });
+      // ✅ Check if user exists in your database
+      const existingUser = await db.user.findUnique({
+        where: { email: user.email },
+      });
 
-    if (!existingUser) {
-      console.log("DB user not found, creating new user...");
+      if (!existingUser) {
+        console.log("DB user not found, creating new user...");
 
-      // ✅ Create the user in the database if not found
-      await db.user.create({
-        data: {
-          id: user.id,
-          email: user.email,
-        },
+        // ✅ Create the user in the database if not found
+        await db.user.create({
+          data: {
+            id: user.id,
+            email: user.email,
+          },
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error in authCallback:", error);
+
+      if (error instanceof TRPCError) {
+        // If it's already a TRPCError, just rethrow it
+        throw error;
+      }
+
+      // If it's a database error, handle it properly
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Database error: ${error.message}`,
+        });
+      }
+
+      // Catch-all for any other unexpected errors
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Something went wrong during authentication.",
       });
     }
-
-    return { success: true };
   }),
 
   getUserFiles: privateProcedure.query(async ({ ctx }) => {
-    const { userId } = ctx;
+    try {
+      const { userId } = ctx;
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
 
-    return await db.file.findMany({
-      where: {
-        userId,
-      },
-    });
+      const files = await db.file.findMany({
+        where: { userId },
+      });
+
+      if (!files) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Files not found.",
+        });
+      }
+
+      return files;
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error; // If it's a known tRPC error, rethrow it
+      }
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Database error: ${error.message}`,
+        });
+      }
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch user files. Please try again later.",
+      });
+    }
   }),
 
   getFile: privateProcedure
     .input(z.object({ key: z.string() })) // Accepts fileId as input
     .mutation(async ({ ctx, input }) => {
-      const { userId } = ctx;
-      const { key } = input;
+      try {
+        const { userId } = ctx;
+        const { key } = input;
 
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+        if (!userId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "User not authenticated.",
+          });
+        }
 
-      const file = await db.file.findFirst({
-        where: {
-          key: key,
-          userId, // Ensures the file belongs to the authenticated user
-        },
-      });
+        const file = await db.file.findFirst({
+          where: {
+            key,
+            userId, // Ensures the file belongs to the authenticated user
+          },
+        });
 
-      if (!file) throw new TRPCError({ code: "NOT_FOUND" });
+        if (!file) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "File not found.",
+          });
+        }
 
-      return file;
+        return file;
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error; // If it's a known tRPC error, rethrow it
+        }
+        if (error instanceof PrismaClientKnownRequestError) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Database error: ${error.message}`,
+          });
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Something went wrong while fetching the file.",
+        });
+      }
     }),
 
   getFileMessages: privateProcedure
@@ -73,91 +154,211 @@ export const appRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const { userId } = ctx;
-      const { fileId, cursor } = input;
-      const limit = input.limit ?? INFINITE_QUERY_LIMIT;
+      try {
+        const { userId } = ctx;
+        const { fileId, cursor } = input;
+        const limit = input.limit ?? INFINITE_QUERY_LIMIT;
 
-      const file = await db.file.findFirst({
-        where: {
-          id: fileId,
-          userId,
-        },
-      });
+        if (!userId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "User not authenticated.",
+          });
+        }
 
-      if (!file) throw new TRPCError({ code: "NOT_FOUND" });
+        const file = await db.file.findFirst({
+          where: {
+            id: fileId,
+            userId,
+          },
+        });
 
-      const messages = await db.message.findMany({
-        take: limit + 1,
-        where: {
-          fileId,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        cursor: cursor ? { id: cursor } : undefined,
-        select: {
-          id: true,
-          isUserMessage: true,
-          createdAt: true,
-          text: true,
-        },
-      });
+        if (!file) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "File not found.",
+          });
+        }
 
-      let nextCursor: typeof cursor | undefined = undefined;
-      if (messages.length > limit) {
-        const nextItem = messages.pop();
-        nextCursor = nextItem?.id;
+        const messages = await db.message.findMany({
+          take: limit + 1,
+          where: {
+            fileId,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          cursor: cursor ? { id: cursor } : undefined,
+          select: {
+            id: true,
+            isUserMessage: true,
+            createdAt: true,
+            text: true,
+          },
+        });
+
+        let nextCursor: typeof cursor | undefined = undefined;
+        if (messages.length > limit) {
+          const nextItem = messages.pop();
+          nextCursor = nextItem?.id;
+        }
+
+        return {
+          messages,
+          nextCursor,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error; // If it's a known tRPC error, rethrow it
+        }
+        if (error instanceof PrismaClientKnownRequestError) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Database error: ${error.message}`,
+          });
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred. Please try again later.",
+        });
       }
-
-      return {
-        messages,
-        nextCursor,
-      };
     }),
 
   getFileUploadStatus: privateProcedure
     .input(z.object({ fileId: z.string() })) // Accepts fileId as input
     .query(async ({ ctx, input }) => {
-      const { userId } = ctx;
-      const { fileId } = input;
+      try {
+        const { userId } = ctx;
+        const { fileId } = input;
 
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+        if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      const file = await db.file.findFirst({
-        where: {
-          id: fileId,
-          userId, // Ensures the file belongs to the authenticated user
-        },
-      });
+        const file = await db.file.findFirst({
+          where: {
+            id: fileId,
+            userId, // Ensures the file belongs to the authenticated user
+          },
+        });
 
-      if (!file) throw new TRPCError({ code: "NOT_FOUND" });
+        if (!file) throw new TRPCError({ code: "NOT_FOUND" });
 
-      return {
-        status: file.uploadStatus,
-      };
+        return {
+          status: file.uploadStatus,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error; // If it's a known tRPC error, rethrow it
+        }
+        if (error instanceof PrismaClientKnownRequestError) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Database error: ${error.message}`,
+          });
+        }
+        // Handle unexpected errors
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred. Please try again later.",
+        });
+      }
     }),
 
   deleteFile: privateProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { userId } = ctx;
+      try {
+        const { userId } = ctx;
+        const { id } = input;
 
-      const file = await db.file.findFirst({
-        where: {
-          id: input.id,
-          userId,
-        },
-      });
+        if (!userId) {
+          throw new TRPCError({ code: "UNAUTHORIZED" });
+        }
 
-      if (!file) throw new TRPCError({ code: "NOT_FOUND" });
+        const file = await db.file.findFirst({
+          where: {
+            id,
+            userId, // Ensures the file belongs to the authenticated user
+          },
+        });
 
-      await db.file.delete({
-        where: {
-          id: input.id,
-        },
-      });
+        if (!file) throw new TRPCError({ code: "NOT_FOUND" });
 
-      return file;
+        // 3. Remove related Pinecone index
+        const pinecone = await getPineconeClient();
+        if (!process.env.PINECONE_INDEX) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Pinecone index name is missing.",
+          });
+        }
+        const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX);
+
+        // Use a transaction to ensure atomicity
+        // await db.$transaction(async (prisma) => {
+        // 1. Delete associated messages
+        // await prisma.message.deleteMany({ where: { fileId: id } });
+
+        // // 2. Delete the file from the database
+        // await prisma.file.delete({ where: { id } });
+
+        // await db.file.delete({
+        //   where: {
+        //     id: input.id,
+        //   },
+        // });
+
+        // 3. Delete file from UploadThing
+        if (file.key) {
+          await utapi.deleteFiles(file.key);
+        }
+
+        // 4. Remove related Pinecone index
+        await pineconeIndex.namespace(id).deleteAll();
+        // });
+
+        await db.file.delete({
+          where: {
+            id: input.id,
+          },
+        });
+
+        return file;
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error; // If it's a known tRPC error, rethrow it
+        }
+        if (error instanceof PrismaClientKnownRequestError) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Database error: ${error.message}`,
+          });
+        }
+        // Handle unexpected errors
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            "An unexpected error occurred while deleting the file. Please try again later.",
+        });
+      }
+      // const { userId } = ctx;
+
+      // const file = await db.file.findFirst({
+      //   where: {
+      //     id: input.id,
+      //     userId,
+      //   },
+      // });
+
+      // if (!file) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // await db.file.delete({
+      //   where: {
+      //     id: input.id,
+      //   },
+      // });
+
+      // return file;
     }),
 });
 
