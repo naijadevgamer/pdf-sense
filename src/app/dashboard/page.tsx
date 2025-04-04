@@ -8,7 +8,6 @@ const Page = async () => {
   const user = await getUser(); // Properly await the user data
 
   if (!user || !user.id) {
-    console.log("DB user not found, redirecting...");
     redirect("/auth-callback?origin=dashboard");
   }
 
@@ -17,7 +16,6 @@ const Page = async () => {
   });
 
   if (!dbUser) {
-    console.log("DB user not found, redirecting...");
     redirect("/auth-callback?origin=dashboard");
   }
 

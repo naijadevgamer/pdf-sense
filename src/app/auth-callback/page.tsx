@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { trpc } from "../_trpc/client";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 const Page = () => {
   const router = useRouter();
@@ -17,11 +18,6 @@ const Page = () => {
     retryDelay: 500,
   });
 
-  useEffect(() => {
-    console.log("Auth callback data:", data);
-    console.log("Auth callback error:", error);
-  }, [data, error]);
-
   // Handle success and error cases in `useEffect`
   useEffect(() => {
     if (data?.success) {
@@ -29,8 +25,9 @@ const Page = () => {
     } else if (error?.data?.code === "UNAUTHORIZED") {
       router.push("/sign-in");
     } else if (error) {
-      console.error("Auth callback error:", error);
-      router.push("/error-page"); // Redirect to an error page instead of looping
+      toast.error("Authentication failed. Please try again.", {
+        description: error.message || "An unknown error occurred.",
+      });
     }
   }, [data, error, router, origin]);
 
