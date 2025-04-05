@@ -11,38 +11,36 @@ import { trpc } from "@/app/_trpc/client";
 import { useUploadThing } from "@/lib/uploadthing";
 import { useRouter } from "next/navigation";
 
-const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
-  const router = useRouter();
+type UploadDropzoneProps = {
+  isSubscribed: boolean;
+  isUploading: boolean;
+  setIsUploading: React.Dispatch<React.SetStateAction<boolean>>;
+  isLoading: boolean;
+  startPolling: (params: { key: string }) => void;
+};
 
-  const [isUploading, setIsUploading] = useState<boolean>(false);
+const UploadDropzone = ({
+  isSubscribed,
+  isUploading,
+  setIsUploading,
+  isLoading,
+  startPolling,
+}: UploadDropzoneProps) => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-
   const { startUpload } = useUploadThing("fileUploader");
-
-  const { mutate: startPolling } = trpc.getFile.useMutation({
-    onSuccess: (file) => {
-      toast.success("successfully uploaded");
-      router.push(`/dashboard/${file.id}`);
-    },
-    onError: (err) => {
-      toast.error(err.message);
-    },
-    retry: true,
-    retryDelay: 500,
-  });
 
   const startSimulatedProgress = () => {
     setUploadProgress(0);
 
     const interval = setInterval(() => {
       setUploadProgress((prevProgress) => {
-        if (prevProgress >= 95) {
+        if (prevProgress >= 90) {
           clearInterval(interval);
           return prevProgress;
         }
-        return prevProgress + 1;
+        return prevProgress + 0.5;
       });
-    }, 100);
+    }, 50);
 
     return interval;
   };
@@ -50,6 +48,7 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
   return (
     <Dropzone
       multiple={false}
+      disabled={isUploading || isLoading} // 🔥 Disable dropzone while loading
       onDrop={async (acceptedFile) => {
         setIsUploading(true);
 
@@ -59,19 +58,26 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
         const res = await startUpload(acceptedFile);
 
         if (!res) {
-          return toast.error("Something went wrong! Please try again later");
+          toast.error("Upload Failed", {
+            description: "Something went wrong! Please try again later.",
+          });
+          setIsUploading(false);
+          return;
         }
 
         const [fileResponse] = res;
-
         const key = fileResponse?.key;
-
         if (!key) {
-          return toast.error("Something went wrong! Please try again later");
+          toast.error("Upload Failed", {
+            description: "Something went wrong! Please try again later.",
+          });
+          return;
         }
 
         clearInterval(progressInterval);
         setUploadProgress(100);
+
+        console.log("Progress set to 100");
 
         startPolling({ key });
       }}
@@ -82,8 +88,8 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
           className="border h-64 m-4 border-dashed border-gray-300 rounded-lg"
         >
           <div className="flex items-center justify-center h-full w-full">
-            <label
-              htmlFor="dropzone-file"
+            <div
+              // htmlFor="dropzone-file"
               className="flex flex-col items-center justify-center w-full h-full rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
             >
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -115,22 +121,27 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
                     value={uploadProgress}
                     className="h-1 w-full bg-zinc-200"
                   />
-                  {uploadProgress === 100 ? (
+                  {/* {uploadProgress === 100 ? (
                     <div className="flex gap-1 items-center justify-center text-sm text-zinc-700 text-center pt-2">
                       <Loader2 className="h-3 w-3 animate-spin" />
                       Redirecting...
                     </div>
+                  ) : null} */}
+                  {isLoading || uploadProgress === 100 ? (
+                    <div className="flex gap-1 items-center justify-center text-sm text-zinc-700 text-center pt-2">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Retrieving file...
+                    </div>
                   ) : null}
                 </div>
               ) : null}
-
               <input
                 {...getInputProps()}
                 type="file"
                 id="dropzone-file"
                 className="hidden"
               />
-            </label>
+            </div>
           </div>
         </div>
       )}
@@ -139,7 +150,44 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
 };
 
 const UploadButton = () => {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+
+  const { mutate: startPolling, isLoading } = trpc.getFile.useMutation({
+    onSuccess: (file) => {
+      router.push(`/dashboard/${file.id}`);
+      toast.success("File Retrieved", {
+        description: "The file was successfully fetched!",
+      });
+    },
+    onError: (error) => {
+      if (error.data?.code === "UNAUTHORIZED") {
+        toast.error("Unauthorized", {
+          description: "You need to be logged in to access this file.",
+        });
+      } else if (error.data?.code === "NOT_FOUND") {
+        toast.error("File Not Found", {
+          description: "The file may have been deleted or moved.",
+        });
+      } else {
+        toast.error("Unexpected Error", {
+          description: "Something went wrong. Please try again later.",
+        });
+      }
+    },
+    retry: (failureCount, error) => {
+      // Retry only for network errors, NOT for permission or missing file errors
+      if (
+        error.data?.code === "UNAUTHORIZED" ||
+        error.data?.code === "NOT_FOUND"
+      ) {
+        return false;
+      }
+      return failureCount < 3; // Retry up to 3 times
+    },
+    retryDelay: (attempt) => attempt * 500, // Exponential backoff: 500ms, 1000ms, 1500ms
+  });
 
   return (
     <Dialog
@@ -150,13 +198,32 @@ const UploadButton = () => {
         }
       }}
     >
-      <DialogTrigger onClick={() => setIsOpen(true)} asChild>
-        <Button>Upload PDF</Button>
+      <DialogTrigger
+        onClick={() => setIsOpen(true)}
+        disabled={isUploading || isLoading}
+        asChild
+      >
+        <Button disabled={isUploading || isLoading}>
+          {(isUploading || isLoading) && (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          )}
+          {isLoading
+            ? "Fetching..."
+            : isUploading
+            ? "Uploading..."
+            : "Upload PDF"}
+        </Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogTitle>Upload PDF</DialogTitle>
-        <UploadDropzone isSubscribed />
+        <UploadDropzone
+          isSubscribed
+          isLoading={isLoading}
+          isUploading={isUploading}
+          setIsUploading={setIsUploading}
+          startPolling={startPolling}
+        />
       </DialogContent>
     </Dialog>
   );
