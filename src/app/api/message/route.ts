@@ -70,10 +70,10 @@ export const POST = async (req: NextRequest) => {
 
     const retrievedText = results.map((r) => r.pageContent).join("\n\n");
 
-    console.log(
-      "Retrieved text from Pinecone:",
-      retrievedText || "No matches found."
-    );
+    // console.log(
+    //   "Retrieved text from Pinecone:",
+    //   retrievedText || "No matches found."
+    // );
 
     // Fetch previous messages
     console.log("Fetching previous messages from database...");
@@ -91,65 +91,163 @@ export const POST = async (req: NextRequest) => {
 
     // Construct AI prompt
     console.log("Constructing AI prompt...");
-    const aiPrompt = `
-    Use the following context (or previous conversation if needed) to answer the user's question in markdown format.
-    If you don't know the answer, just say that you don't know.
+    //     const aiPrompt = `
+    //   Answer the user's question using only the relevant information from the provided CONTEXT.
+    //   Do NOT repeat the full context. Summarize only what is needed.
+    //   If the context does not have the answer, just say "I don't know."
 
-    \n----------------\n
-    PREVIOUS CONVERSATION:
-    ${formattedPrevMessages
-      .map(
-        (msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`
-      )
-      .join("\n")}
+    //   \n----------------\n
+    //   PREVIOUS CONVERSATION (for reference):
+    //   ${formattedPrevMessages
+    //     .map((msg) => `${msg.role}: ${msg.content}`)
+    //     .join("\n")}
 
-    \n----------------\n
-    CONTEXT:
-    ${retrievedText}
+    //   \n----------------\n
+    //   CONTEXT (from the document):
+    //   ${retrievedText}
 
-    USER INPUT: ${message}
-    `;
+    //   \n----------------\n
+    //   USER QUESTION:
+    //   ${message}
+
+    //   \n----------------\n
+    //   ### RESPONSE START ###
+    // `;
+
+    function processMessages(
+      messages: { isUserMessage: boolean; text: string }[]
+    ) {
+      if (messages.length === 0) return [];
+
+      let processedMessages: { role: "user" | "assistant"; content: string }[] =
+        [];
+      let lastMessage = messages[0];
+
+      for (let i = 1; i < messages.length; i++) {
+        if (messages[i].isUserMessage === lastMessage.isUserMessage) {
+          // Merge consecutive messages with the same role
+          lastMessage.text += " " + messages[i].text;
+        } else {
+          // Push merged message before moving to a new role
+          processedMessages.push({
+            role: lastMessage.isUserMessage ? "user" : "assistant",
+            content: lastMessage.text,
+          });
+          lastMessage = messages[i];
+        }
+      }
+
+      // Push the last merged message
+      processedMessages.push({
+        role: lastMessage.isUserMessage ? "user" : "assistant",
+        content: lastMessage.text,
+      });
+
+      // If the last message is from the user, remove it to prevent consecutive user messages
+      if (
+        processedMessages.length > 0 &&
+        processedMessages[processedMessages.length - 1].role === "user"
+      ) {
+        processedMessages.pop();
+      }
+
+      return processedMessages;
+    }
+
+    // const prevMessages = [
+    //   { isUserMessage: true, text: "What is AI?" },
+    //   { isUserMessage: true, text: "Can you give an example?" },
+    //   { isUserMessage: false, text: "AI stands for Artificial Intelligence." },
+    //   { isUserMessage: false, text: "For example, ChatGPT is an AI model." },
+    //   { isUserMessage: true, text: "How does it work?" },
+    //   {
+    //     isUserMessage: false,
+    //     text: "AI works by processing data using neural networks.",
+    //   },
+    //   { isUserMessage: true, text: "Tell me more." },
+    //   { isUserMessage: true, text: "Give me another example." },
+    // ];
+
+    console.log(processMessages(prevMessages));
 
     console.log("AI prompt constructed. Sending request to AI model...");
 
     // Stream AI response
-    const responseStream = hf.textGenerationStream({
-      model: "mistralai/Mistral-7B-Instruct-v0.1",
-      inputs: aiPrompt,
-      parameters: {
-        max_new_tokens: 500,
-        temperature: 0.7,
-        top_k: 50,
-        top_p: 0.95,
-        repetition_penalty: 1.2,
-        stop: ["User:", "Assistant:"],
-      },
+    const responseStream = hf.chatCompletionStream({
+      model: "mistralai/Mistral-7B-Instruct-v0.3",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an AI assistant. Use the provided context from the retrieved text to answer questions accurately. If the answer isn't in the context, say you don't know.\n\n" +
+            `Context from document:\n\n${retrievedText}`,
+        },
+        ...processMessages(prevMessages),
+        {
+          role: "user",
+          content: message, // The latest user question
+        },
+      ],
+      max_tokens: 500,
+      temperature: 0.7,
     });
 
     console.log("AI response streaming initialized.");
 
     // Convert AsyncGenerator to ReadableStream
+    // const stream = new ReadableStream({
+    //   async start(controller) {
+    //     let generatedText = ""; // Store the generated text
+    //     try {
+    //       // Pull data from the AsyncGenerator
+    //       for await (const chunk of responseStream) {
+    //         const text = chunk.generated_text;
+    //         if (text != null) {
+    //           controller.enqueue(text);
+    //           generatedText += text;
+    //           console.log("Generated text chunk:", text);
+    //         } else {
+    //           console.warn(
+    //             "Warning: Received null or undefined text chunk, skipping."
+    //           );
+    //         }
+    //       }
+
+    //       console.log(
+    //         "AI response generation completed. Storing in database..."
+    //       );
+    //       console.log(generatedText);
+    //       await onCompletion(generatedText);
+    //       controller.close();
+    //     } catch (error) {
+    //       console.error("Error during AI response streaming:", error);
+    //       controller.error(error);
+    //     }
+    //   },
+    // });
+
     const stream = new ReadableStream({
       async start(controller) {
         let generatedText = ""; // Store the generated text
         try {
           // Pull data from the AsyncGenerator
           for await (const chunk of responseStream) {
-            const text = chunk.generated_text;
-            if (text != null) {
-              controller.enqueue(text);
-              generatedText += text;
-              console.log("Generated text chunk:", text);
+            if (chunk.choices && chunk.choices.length > 0) {
+              const text = chunk.choices[0].delta.content;
+              if (text) {
+                controller.enqueue(text);
+                generatedText += text;
+                console.log("Generated text chunk:", text);
+              }
             } else {
-              console.warn(
-                "Warning: Received null or undefined text chunk, skipping."
-              );
+              console.warn("Warning: Received an empty chunk, skipping.");
             }
           }
 
           console.log(
             "AI response generation completed. Storing in database..."
           );
+          console.log(generatedText);
           await onCompletion(generatedText);
           controller.close();
         } catch (error) {
@@ -161,16 +259,16 @@ export const POST = async (req: NextRequest) => {
 
     // Define onCompletion callback
     async function onCompletion(completion: string) {
-      console.log("Storing final AI-generated message in database...");
+      console.log("AI response:", completion);
+
       await db.message.create({
         data: {
           text: completion,
           isUserMessage: false,
-          fileId, // Ensure this is defined in your context
-          userId, // Ensure this is defined in your context
+          fileId,
+          userId,
         },
       });
-      console.log("AI-generated message stored successfully.");
     }
 
     return new StreamingTextResponse(stream);
