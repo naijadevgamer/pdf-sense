@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Button } from "../ui/button";
 import ChatInput from "./ChatInput";
 import { ChatContextProvider } from "@/context/ChatContext";
+import Messages from "./Messages";
+import { toast } from "sonner";
 // import Messages from "./Messages";
 
 interface ChatWrapperProps {
@@ -21,6 +23,25 @@ const ChatWrapper = ({ fileId }: ChatWrapperProps) => {
     {
       refetchInterval: (data) =>
         data?.status === "SUCCESS" || data?.status === "FAILED" ? false : 500,
+
+      onError: (err) => {
+        if (err.data?.code === "UNAUTHORIZED") {
+          toast.error("Unauthorized Access", {
+            description:
+              "You are not authorized to access this file. Please log in.",
+          });
+        } else if (err.data?.code === "NOT_FOUND") {
+          toast.error("File Not Found", {
+            description:
+              "The file was not found or you do not have access to it.",
+          });
+        } else {
+          toast.error("Unexpected Error", {
+            description:
+              "Something went wrong while fetching the file status. Please try again later.",
+          });
+        }
+      },
     }
   );
 
@@ -83,10 +104,8 @@ const ChatWrapper = ({ fileId }: ChatWrapperProps) => {
     <ChatContextProvider fileId={fileId}>
       <div className="relative min-h-full bg-zinc-50 flex divide-y divide-zinc-200 flex-col justify-between gap-2">
         <div className="flex-1 justify-between flex flex-col mb-28">
-          {/* <Messages fileId={fileId} /> */}
-          <h1 className="text-6xl">Hello</h1>
+          <Messages fileId={fileId} />
         </div>
-
         <ChatInput />
       </div>
     </ChatContextProvider>
