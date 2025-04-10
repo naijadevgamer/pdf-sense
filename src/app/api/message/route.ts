@@ -91,28 +91,6 @@ export const POST = async (req: NextRequest) => {
 
     // Construct AI prompt
     console.log("Constructing AI prompt...");
-    //     const aiPrompt = `
-    //   Answer the user's question using only the relevant information from the provided CONTEXT.
-    //   Do NOT repeat the full context. Summarize only what is needed.
-    //   If the context does not have the answer, just say "I don't know."
-
-    //   \n----------------\n
-    //   PREVIOUS CONVERSATION (for reference):
-    //   ${formattedPrevMessages
-    //     .map((msg) => `${msg.role}: ${msg.content}`)
-    //     .join("\n")}
-
-    //   \n----------------\n
-    //   CONTEXT (from the document):
-    //   ${retrievedText}
-
-    //   \n----------------\n
-    //   USER QUESTION:
-    //   ${message}
-
-    //   \n----------------\n
-    //   ### RESPONSE START ###
-    // `;
 
     function processMessages(
       messages: { isUserMessage: boolean; text: string }[]
@@ -154,20 +132,6 @@ export const POST = async (req: NextRequest) => {
       return processedMessages;
     }
 
-    // const prevMessages = [
-    //   { isUserMessage: true, text: "What is AI?" },
-    //   { isUserMessage: true, text: "Can you give an example?" },
-    //   { isUserMessage: false, text: "AI stands for Artificial Intelligence." },
-    //   { isUserMessage: false, text: "For example, ChatGPT is an AI model." },
-    //   { isUserMessage: true, text: "How does it work?" },
-    //   {
-    //     isUserMessage: false,
-    //     text: "AI works by processing data using neural networks.",
-    //   },
-    //   { isUserMessage: true, text: "Tell me more." },
-    //   { isUserMessage: true, text: "Give me another example." },
-    // ];
-
     console.log(processMessages(prevMessages));
 
     console.log("AI prompt constructed. Sending request to AI model...");
@@ -193,38 +157,6 @@ export const POST = async (req: NextRequest) => {
     });
 
     console.log("AI response streaming initialized.");
-
-    // Convert AsyncGenerator to ReadableStream
-    // const stream = new ReadableStream({
-    //   async start(controller) {
-    //     let generatedText = ""; // Store the generated text
-    //     try {
-    //       // Pull data from the AsyncGenerator
-    //       for await (const chunk of responseStream) {
-    //         const text = chunk.generated_text;
-    //         if (text != null) {
-    //           controller.enqueue(text);
-    //           generatedText += text;
-    //           console.log("Generated text chunk:", text);
-    //         } else {
-    //           console.warn(
-    //             "Warning: Received null or undefined text chunk, skipping."
-    //           );
-    //         }
-    //       }
-
-    //       console.log(
-    //         "AI response generation completed. Storing in database..."
-    //       );
-    //       console.log(generatedText);
-    //       await onCompletion(generatedText);
-    //       controller.close();
-    //     } catch (error) {
-    //       console.error("Error during AI response streaming:", error);
-    //       controller.error(error);
-    //     }
-    //   },
-    // });
 
     const stream = new ReadableStream({
       async start(controller) {
