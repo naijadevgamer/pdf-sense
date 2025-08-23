@@ -51,35 +51,40 @@ const UploadDropzone = ({
       disabled={isUploading || isLoading} // 🔥 Disable dropzone while loading
       onDrop={async (acceptedFile) => {
         setIsUploading(true);
-
         const progressInterval = startSimulatedProgress();
 
-        // handle file uploading
-        const res = await startUpload(acceptedFile);
+        try {
+          const res = await startUpload(acceptedFile);
+          console.log("Upload response:", res);
 
-        if (!res) {
-          toast.error("Upload Failed", {
-            description: "Something went wrong! Please try again later.",
-          });
+          if (!res || res.length === 0) {
+            throw new Error("No response from upload");
+          }
+
+          const [fileResponse] = res;
+
+          // Check if the response has the expected structure
+          if (!fileResponse || !fileResponse.key) {
+            console.error("Invalid response structure:", fileResponse);
+            throw new Error("Invalid upload response");
+          }
+
+          clearInterval(progressInterval);
+          setUploadProgress(100);
+          console.log("Progress set to 100");
+
+          startPolling({ key: fileResponse.key });
+        } catch (error) {
+          console.error("Upload error:", error);
+          clearInterval(progressInterval);
           setIsUploading(false);
-          return;
-        }
+          setUploadProgress(0);
 
-        const [fileResponse] = res;
-        const key = fileResponse?.key;
-        if (!key) {
           toast.error("Upload Failed", {
-            description: "Something went wrong! Please try again later.",
+            description:
+              error instanceof Error ? error.message : "Something went wrong!",
           });
-          return;
         }
-
-        clearInterval(progressInterval);
-        setUploadProgress(100);
-
-        console.log("Progress set to 100");
-
-        startPolling({ key });
       }}
     >
       {({ getRootProps, getInputProps, acceptedFiles }) => (
@@ -157,11 +162,14 @@ const UploadButton = () => {
   const { mutate: startPolling, isLoading } = trpc.getFile.useMutation({
     onSuccess: (file) => {
       router.push(`/dashboard/${file.id}`);
-      toast.success("File Retrieved", {
-        description: "The file was successfully fetched!",
-      });
+      // toast.success("File Retrieved", {
+      //   description: "The file was successfully fetched!",
+      // });
     },
     onError: (error) => {
+      console.error("Error fetching file:", error);
+      setIsUploading(false);
+      setIsOpen(false);
       if (error.data?.code === "UNAUTHORIZED") {
         toast.error("Unauthorized", {
           description: "You need to be logged in to access this file.",

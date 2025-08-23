@@ -1,3 +1,5 @@
+"use client";
+
 import { ReactNode, createContext, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { trpc } from "@/app/_trpc/client";
@@ -9,6 +11,7 @@ type StreamResponse = {
   message: string;
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   isLoading: boolean;
+  retryMessage: () => void;
 };
 
 export const ChatContext = createContext<StreamResponse>({
@@ -16,6 +19,7 @@ export const ChatContext = createContext<StreamResponse>({
   message: "",
   handleInputChange: () => {},
   isLoading: false,
+  retryMessage: () => {},
 });
 
 interface Props {
@@ -26,9 +30,12 @@ interface Props {
 export const ChatContextProvider = ({ fileId, children }: Props) => {
   const [message, setMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [lastError, setLastError] = useState<{
+    message: string;
+    timestamp: number;
+  } | null>(null);
 
   const utils = trpc.useUtils();
-
   const backupMessage = useRef("");
 
   const { mutate: sendMessage } = useMutation({
@@ -58,14 +65,12 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
     onMutate: async ({ message }) => {
       backupMessage.current = message;
       setMessage("");
+      setLastError(null); // Clear previous errors when trying again
 
-      // step 1
       await utils.getFileMessages.cancel();
 
-      // step 2
       const previousMessages = utils.getFileMessages.getInfiniteData();
 
-      // step 3
       utils.getFileMessages.setInfiniteData(
         { fileId, limit: INFINITE_QUERY_LIMIT },
         (old) => {
@@ -77,7 +82,6 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
           }
 
           let newPages = [...old.pages];
-
           let latestPage = newPages[0]!;
 
           latestPage.messages = [
@@ -106,12 +110,22 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
           previousMessages?.pages.flatMap((page) => page.messages) ?? [],
       };
     },
+
     onSuccess: async (stream) => {
       setIsLoading(false);
 
       if (!stream) {
+        setLastError({
+          message: backupMessage.current,
+          timestamp: Date.now(),
+        });
         return toast.error("There was a problem sending this message", {
           description: "Please refresh this page and try again",
+          action: {
+            label: "Retry",
+            onClick: () => retryMessage(),
+          },
+          duration: 10000,
         });
       }
 
@@ -119,18 +133,19 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
         const reader = stream.getReader();
         const decoder = new TextDecoder();
         let done = false;
-
-        // accumulated response
         let accResponse = "";
 
         while (!done) {
           const { value, done: doneReading } = await reader.read();
           done = doneReading;
-          const chunkValue = decoder.decode(value);
 
+          if (doneReading && !value) {
+            break;
+          }
+
+          const chunkValue = decoder.decode(value);
           accResponse += chunkValue;
 
-          // append chunk to the actual message
           utils.getFileMessages.setInfiniteData(
             { fileId, limit: INFINITE_QUERY_LIMIT },
             (old) => {
@@ -180,18 +195,37 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
           );
         }
       } catch (error) {
-        toast.error("Error processing the response", {
-          description: "Something went wrong while receiving the message.",
+        setLastError({
+          message: backupMessage.current,
+          timestamp: Date.now(),
         });
+        toast.error("Connection interrupted", {
+          description: "The response was cut short. Please try again.",
+          action: {
+            label: "Retry",
+            onClick: () => retryMessage(),
+          },
+          duration: 10000,
+        });
+        await utils.getFileMessages.invalidate({ fileId });
       }
     },
 
-    onError: (_, __, context) => {
-      // setMessage(backupMessage.current);
-      // utils.getFileMessages.setData(
-      //   { fileId },
-      //   { messages: context?.previousMessages ?? [] }
-      // );
+    onError: (error: any, __, context) => {
+      setLastError({
+        message: backupMessage.current,
+        timestamp: Date.now(),
+      });
+
+      toast.error("Failed to send message", {
+        description: error.message || "Please try again.",
+        action: {
+          label: "Retry",
+          onClick: () => retryMessage(),
+        },
+        duration: 10000,
+      });
+
       setMessage(backupMessage.current);
       utils.getFileMessages.setInfiniteData(
         { fileId, limit: INFINITE_QUERY_LIMIT },
@@ -201,6 +235,7 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
         })
       );
     },
+
     onSettled: async () => {
       setIsLoading(false);
       await utils.getFileMessages.invalidate({ fileId });
@@ -211,7 +246,19 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
     setMessage(e.target.value);
   };
 
-  const addMessage = () => sendMessage({ message });
+  const addMessage = () => {
+    if (isLoading || message.trim() === "") return;
+    sendMessage({ message });
+  };
+
+  const retryMessage = () => {
+    if (lastError?.message) {
+      setMessage(lastError.message);
+      setTimeout(() => {
+        sendMessage({ message: lastError.message });
+      }, 10);
+    }
+  };
 
   return (
     <ChatContext.Provider
@@ -220,6 +267,7 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
         message,
         handleInputChange,
         isLoading,
+        retryMessage,
       }}
     >
       {children}
