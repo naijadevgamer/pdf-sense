@@ -56,6 +56,7 @@ export const POST = async (req: NextRequest) => {
     const pinecone = await getPineconeClient();
     const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
     console.log("Pinecone index initialized. Querying Pinecone...");
+    console.log("file.id:", file.id);
 
     const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
       pineconeIndex,
@@ -69,11 +70,6 @@ export const POST = async (req: NextRequest) => {
     );
 
     const retrievedText = results.map((r) => r.pageContent).join("\n\n");
-
-    // console.log(
-    //   "Retrieved text from Pinecone:",
-    //   retrievedText || "No matches found."
-    // );
 
     // Fetch previous messages
     console.log("Fetching previous messages from database...");
@@ -146,6 +142,7 @@ export const POST = async (req: NextRequest) => {
             "You are an AI assistant. Use the provided context from the retrieved text to answer questions accurately. If the answer isn't in the context, say you don't know.\n\n" +
             `Context from document:\n\n${retrievedText}`,
         },
+
         ...processMessages(prevMessages),
         {
           role: "user",
