@@ -9,6 +9,7 @@ import Link from "next/link";
 import MaxWidthWrapper from "./MaxWidthWrapper";
 import { Button } from "./ui/button";
 import UserAccountNav from "./UserAccountNav";
+import MobileNav from "./MobileNav";
 
 const Navbar = async () => {
   const { getUser } = getKindeServerSession();
@@ -20,9 +21,11 @@ const Navbar = async () => {
         <div className="flex h-14 items-center justify-between border-b border-zinc-200">
           <Link href="/" className="flex z-40 font-semibold">
             <h1 className="uppercase tracking-wide bg-gradient-to-r from-blue-600 to-primary text-transparent bg-clip-text">
-              PDFSense
+              PDFSense.
             </h1>
           </Link>
+
+          <MobileNav isAuth={!!user} />
 
           <div className="hidden items-center space-x-4 sm:flex">
             {!user ? (
