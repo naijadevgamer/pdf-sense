@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Sora } from "next/font/google";
 import "./globals.css";
 import { cn, constructMetadata } from "@/lib/utils";
