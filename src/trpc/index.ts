@@ -7,6 +7,9 @@ import { INFINITE_QUERY_LIMIT } from "@/config/infinite-query";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { utapi } from "@/app/api/uploadthing/route";
 import { getPineconeClient } from "@/lib/pinecone";
+import { absoluteUrl } from "@/lib/utils";
+import { getUserSubscriptionPlan, stripe } from "@/lib/stripe";
+import { PLANS } from "@/config/stripe";
 
 export const appRouter = router({
   authCallback: publicProcedure.query(async () => {
@@ -144,6 +147,52 @@ export const appRouter = router({
         });
       }
     }),
+
+  createStripeSession: privateProcedure.mutation(async ({ ctx }) => {
+    const { userId } = ctx;
+
+    const billingUrl = absoluteUrl("/dashboard/billing");
+
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+    const dbUser = await db.user.findFirst({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+    const subscriptionPlan = await getUserSubscriptionPlan();
+
+    if (subscriptionPlan.isSubscribed && dbUser.stripeCustomerId) {
+      const stripeSession = await stripe.billingPortal.sessions.create({
+        customer: dbUser.stripeCustomerId,
+        return_url: billingUrl,
+      });
+
+      return { url: stripeSession.url };
+    }
+
+    const stripeSession = await stripe.checkout.sessions.create({
+      success_url: billingUrl,
+      cancel_url: billingUrl,
+      payment_method_types: ["card", "paypal"],
+      mode: "subscription",
+      billing_address_collection: "auto",
+      line_items: [
+        {
+          price: PLANS.find((plan) => plan.name === "Pro")?.price.priceIds.test,
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        userId: userId,
+      },
+    });
+
+    return { url: stripeSession.url };
+  }),
 
   getFileMessages: privateProcedure
     .input(
@@ -294,20 +343,6 @@ export const appRouter = router({
         }
         const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX);
 
-        // Use a transaction to ensure atomicity
-        // await db.$transaction(async (prisma) => {
-        // 1. Delete associated messages
-        // await prisma.message.deleteMany({ where: { fileId: id } });
-
-        // // 2. Delete the file from the database
-        // await prisma.file.delete({ where: { id } });
-
-        // await db.file.delete({
-        //   where: {
-        //     id: input.id,
-        //   },
-        // });
-
         // 3. Delete file from UploadThing
         if (file.key) {
           await utapi.deleteFiles(file.key);
@@ -315,7 +350,6 @@ export const appRouter = router({
 
         // 4. Remove related Pinecone index
         await pineconeIndex.namespace(id).deleteAll();
-        // });
 
         await db.file.delete({
           where: {
