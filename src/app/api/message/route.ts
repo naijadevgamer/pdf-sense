@@ -72,29 +72,22 @@ export const POST = async (req: NextRequest) => {
     const retrievedText = results.map((r) => r.pageContent).join("\n\n");
 
     // Fetch previous messages
-    console.log("Fetching previous messages from database...");
     const prevMessages = await db.message.findMany({
       where: { fileId },
       orderBy: { createdAt: "asc" },
       take: 6,
     });
-    console.log(`Fetched ${prevMessages.length} previous messages.`);
-
-    const formattedPrevMessages = prevMessages.map((msg) => ({
-      role: msg.isUserMessage ? "user" : "assistant",
-      content: msg.text,
-    }));
 
     // Construct AI prompt
-    console.log("Constructing AI prompt...");
-
     function processMessages(
       messages: { isUserMessage: boolean; text: string }[]
     ) {
       if (messages.length === 0) return [];
 
-      let processedMessages: { role: "user" | "assistant"; content: string }[] =
-        [];
+      const processedMessages: {
+        role: "user" | "assistant";
+        content: string;
+      }[] = [];
       let lastMessage = messages[0];
 
       for (let i = 1; i < messages.length; i++) {
