@@ -13,7 +13,7 @@ const MobileNav = ({ isAuth }: { isAuth: boolean }) => {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (isOpen) toggleOpen();
+    setOpen(false);
   }, [pathname]);
 
   const closeOnCurrent = (href: string) => {

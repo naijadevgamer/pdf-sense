@@ -1,6 +1,8 @@
 import BillingForm from "@/components/BillingForm";
 import { getUserSubscriptionPlan } from "@/lib/stripe";
 
+export const dynamic = "force-dynamic";
+
 const Page = async () => {
   const subscriptionPlan = await getUserSubscriptionPlan();
 

@@ -194,13 +194,16 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
             }
           );
         }
-      } catch (_error) {
+      } catch (error) {
         setLastError({
           message: backupMessage.current,
           timestamp: Date.now(),
         });
         toast.error("Connection interrupted", {
-          description: "The response was cut short. Please try again.",
+          description:
+            error instanceof Error
+              ? error.message
+              : "The response was cut short. Please try again.",
           action: {
             label: "Retry",
             onClick: () => retryMessage(),
@@ -211,14 +214,15 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
       }
     },
 
-    onError: (error: any, __, context) => {
+    onError: (error: unknown, __, context) => {
       setLastError({
         message: backupMessage.current,
         timestamp: Date.now(),
       });
 
       toast.error("Failed to send message", {
-        description: error.message || "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         action: {
           label: "Retry",
           onClick: () => retryMessage(),
@@ -229,7 +233,7 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
       setMessage(backupMessage.current);
       utils.getFileMessages.setInfiniteData(
         { fileId, limit: INFINITE_QUERY_LIMIT },
-        (_old) => ({
+        () => ({
           pages: [{ messages: context?.previousMessages ?? [] }],
           pageParams: [],
         })
