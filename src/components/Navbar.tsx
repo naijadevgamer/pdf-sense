@@ -20,7 +20,7 @@ const Navbar = async () => {
       <MaxWidthWrapper>
         <div className="flex h-14 items-center justify-between border-b border-zinc-200">
           <Link href="/" className="flex z-40 font-semibold">
-            <h1 className="uppercase tracking-wide bg-gradient-to-r from-blue-600 to-primary text-transparent bg-clip-text">
+            <h1 className="tracking-wide bg-gradient-to-r from-blue-600 to-primary text-transparent bg-clip-text">
               PDFSense.
             </h1>
           </Link>
