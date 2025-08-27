@@ -10,7 +10,13 @@ import { toast } from "sonner";
 import { Button } from "./ui/button";
 import UploadButton from "./UploadButton";
 
-const Dashboard = () => {
+import { getUserSubscriptionPlan } from "@/lib/stripe";
+
+interface PageProps {
+  subscriptionPlan: Awaited<ReturnType<typeof getUserSubscriptionPlan>>;
+}
+
+const Dashboard = ({ subscriptionPlan }: PageProps) => {
   const [currentlyDeletingFile, setCurrentlyDeletingFile] = useState<
     string | null
   >(null);
@@ -70,10 +76,12 @@ const Dashboard = () => {
   });
 
   return (
-    <main className="mx-auto max-w-7xl md:p-10">
+    <main className="md:py-10">
       <div className="mt-8 flex flex-col items-start justify-between gap-4 border-b border-gray-200 pb-5 sm:flex-row sm:items-center sm:gap-0">
         <h1 className="mb-3 font-bold text-5xl text-gray-900">My Files</h1>
-        {files && files?.length > 0 ? <UploadButton /> : null}
+        {files && files?.length > 0 ? (
+          <UploadButton isSubscribed={subscriptionPlan.isSubscribed} />
+        ) : null}
       </div>
 
       {/* display all user files */}
@@ -157,7 +165,7 @@ const Dashboard = () => {
       ) : isLoading ? (
         <Skeleton height={100} className="my-2" count={3} />
       ) : (
-        <div className="mt-16 flex flex-col items-center gap-2">
+        <div className="mt-16 flex flex-col items-center gap-2 text-center">
           <Ghost className="size-10 text-destructive-foreground" />
           <h3 className="font-semibold text-xl">
             Looks like you don’t have any files yet
@@ -166,7 +174,7 @@ const Dashboard = () => {
             Start by uploading your first PDF to get started. Just click the
             button below!
           </p>
-          <UploadButton />
+          <UploadButton isSubscribed={subscriptionPlan.isSubscribed} />
         </div>
       )}
     </main>

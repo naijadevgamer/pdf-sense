@@ -27,8 +27,9 @@ const UploadDropzone = ({
   startPolling,
 }: UploadDropzoneProps) => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const { startUpload } = useUploadThing("fileUploader");
-
+  const { startUpload } = useUploadThing(
+    isSubscribed ? "proPlanUploader" : "freePlanUploader"
+  );
   const startSimulatedProgress = () => {
     setUploadProgress(0);
 
@@ -154,7 +155,7 @@ const UploadDropzone = ({
   );
 };
 
-const UploadButton = () => {
+const UploadButton = ({ isSubscribed }: { isSubscribed: boolean }) => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -162,9 +163,6 @@ const UploadButton = () => {
   const { mutate: startPolling, isLoading } = trpc.getFile.useMutation({
     onSuccess: (file) => {
       router.push(`/dashboard/${file.id}`);
-      // toast.success("File Retrieved", {
-      //   description: "The file was successfully fetched!",
-      // });
     },
     onError: (error) => {
       console.error("Error fetching file:", error);
@@ -226,7 +224,7 @@ const UploadButton = () => {
       <DialogContent>
         <DialogTitle>Upload PDF</DialogTitle>
         <UploadDropzone
-          isSubscribed
+          isSubscribed={isSubscribed}
           isLoading={isLoading}
           isUploading={isUploading}
           setIsUploading={setIsUploading}

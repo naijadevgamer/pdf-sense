@@ -6,159 +6,167 @@ import { PineconeStore } from "@langchain/pinecone";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
+import { getUserSubscriptionPlan } from "@/lib/stripe";
+import { PLANS } from "@/config/stripe";
 
 const f = createUploadthing();
 
-// FileRouter for your app, can contain multiple FileRoutes
-export const ourFileRouter = {
-  // Define as many FileRoutes as you like, each with a unique routeSlug
-  fileUploader: f({
-    pdf: {
-      maxFileSize: "4MB",
-      maxFileCount: 1,
-    },
-  })
-    // Set permissions and file types for this FileRoute
-    .middleware(async () => {
-      // This code runs on your server before upload
-      const { getUser } = getKindeServerSession();
-      const user = await getUser(); // Properly await the user data
+const middleware = async () => {
+  const { getUser } = getKindeServerSession();
+  const user = await getUser();
 
-      // If you throw, the user will not be able to upload
-      if (!user) throw new UploadThingError("Unauthorized");
+  if (!user || !user.id) throw new Error("Unauthorized");
 
-      // Whatever is returned here is accessible in onUploadComplete as `metadata`
-      return { userId: user.id };
-    })
-    .onUploadComplete(async ({ metadata, file }) => {
-      try {
-        const isFileExist = await db.file.findFirst({
-          where: {
-            key: file.key,
-          },
-        });
+  const subscriptionPlan = await getUserSubscriptionPlan();
 
-        if (isFileExist) {
-          console.log("File already exists");
-          return { success: true, message: "File already exists" }; // Add return
-        }
+  return { subscriptionPlan, userId: user.id };
+};
 
-        const createdFile = await db.file.create({
-          data: {
-            key: file.key,
-            name: file.name,
-            userId: metadata.userId,
-            url: `https://9syn0q6snr.ufs.sh/f/${file.key}`,
-            uploadStatus: "PROCESSING",
-          },
-        });
-
-        // Process the file asynchronously without blocking the response
-        processFileAsync(createdFile, file.key).catch(console.error);
-
-        // Return the expected response format
-        return {
-          success: true,
-          file: {
-            key: file.key,
-            name: file.name,
-            url: `https://9syn0q6snr.ufs.sh/f/${file.key}`,
-          },
-        };
-      } catch (error) {
-        console.error("Error in onUploadComplete:", error);
-        // Return error response
-        return {
-          success: false,
-          error: "Failed to process upload",
-        };
-      }
-    }),
-} satisfies FileRouter;
-
-// Separate function for async processing
-async function processFileAsync(createdFile: any, fileKey: string) {
+const onUploadComplete = async ({
+  metadata,
+  file,
+}: {
+  metadata: Awaited<ReturnType<typeof middleware>>;
+  file: {
+    key: string;
+    name: string;
+    url: string;
+  };
+}) => {
   try {
-    console.log("Starting file processing for:", fileKey);
+    // Check if file already exists
+    const existingFile = await db.file.findFirst({
+      where: {
+        key: file.key,
+      },
+    });
 
-    // Fetch file
-    const response = await fetch(`https://9syn0q6snr.ufs.sh/f/${fileKey}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file: ${response.status}`);
+    if (existingFile) {
+      console.log("File already exists");
+      return { success: true, message: "File already exists" };
     }
-    console.log("File fetched successfully.");
 
-    const blob = await response.blob();
-    console.log("blob created from response.", blob);
-    console.log("File converted to blob.");
-
-    // Process PDF
-    const loader = new PDFLoader(blob);
-    console.log("loader", loader);
-
-    console.log("PDFLoader initialized.");
-
-    const pageLevelDocs = await loader.load();
-    console.log(`PDF loaded. Total pages: ${pageLevelDocs.length}`);
-
-    // Initialize Pinecone
-    const pinecone = await getPineconeClient();
-    console.log("Connected to Pinecone client.");
-
-    const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
-    console.log("Pinecone index initialized.");
-
-    // Initialize embeddings
-    const embeddings = new HuggingFaceInferenceEmbeddings({
-      apiKey: process.env.HUGGINGFACE_API_KEY!,
-      model: "sentence-transformers/all-MiniLM-L6-v2",
-    });
-
-    console.log("Embeddings initialized.");
-    console.log("Embeddings initialized.");
-    console.log("Embeddings initialized.", embeddings);
-
-    // Add this to your processFileAsync function after embeddings initialization
-    const sampleEmbedding = await embeddings.embedQuery("test");
-    console.log("Embedding dimension:", sampleEmbedding.length);
-
-    // You can also check if your Pinecone index has the right dimension
-    const indexStats = await pineconeIndex.describeIndexStats();
-    console.log("Index stats:", indexStats);
-
-    // Store documents in Pinecone
-    console.log("Storing documents in Pinecone...");
-    await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
-      pineconeIndex,
-      namespace: createdFile.id,
-    });
-    console.log("Documents stored in Pinecone successfully.");
-
-    // Update database
-    await db.file.update({
+    // Create file record in database
+    const createdFile = await db.file.create({
       data: {
-        uploadStatus: "SUCCESS",
-      },
-      where: {
-        id: createdFile.id,
+        key: file.key,
+        name: file.name,
+        userId: metadata.userId,
+        url: `https://9syn0q6snr.ufs.sh/f/${file.key}`,
+        uploadStatus: "PROCESSING",
       },
     });
-    console.log("File processing completed successfully.");
-  } catch (err) {
-    console.error("Error in async processing:", err);
-    throw err;
 
-    // Update database with error
-    await db.file.update({
-      data: {
-        uploadStatus: "FAILED",
+    try {
+      // Fetch file for processing
+      const response = await fetch(`https://9syn0q6snr.ufs.sh/f/${file.key}`);
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch file: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const blob = await response.blob();
+
+      // Process PDF
+      const loader = new PDFLoader(blob);
+      const pageLevelDocs = await loader.load();
+      const pagesAmt = pageLevelDocs.length;
+
+      // Check page limits based on subscription plan
+      const { subscriptionPlan } = metadata;
+      const { isSubscribed } = subscriptionPlan;
+
+      const proPlan = PLANS.find((plan) => plan.name === "Pro");
+      const freePlan = PLANS.find((plan) => plan.name === "Free");
+
+      if (!proPlan || !freePlan) {
+        throw new Error("Subscription plans not configured properly");
+      }
+
+      const isProExceeded = pagesAmt > proPlan.pagesPerPdf;
+      const isFreeExceeded = pagesAmt > freePlan.pagesPerPdf;
+
+      if (
+        (isSubscribed && isProExceeded) ||
+        (!isSubscribed && isFreeExceeded)
+      ) {
+        await db.file.update({
+          data: { uploadStatus: "FAILED" },
+          where: { id: createdFile.id },
+        });
+        throw new Error(`Page limit exceeded: ${pagesAmt} pages`);
+      }
+
+      // Initialize Pinecone
+      const pinecone = await getPineconeClient();
+      const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
+
+      // Validate environment variables
+      if (!process.env.HUGGINGFACE_API_KEY) {
+        throw new Error("HUGGINGFACE_API_KEY environment variable is not set");
+      }
+
+      if (!process.env.PINECONE_INDEX) {
+        throw new Error("PINECONE_INDEX environment variable is not set");
+      }
+
+      // Initialize embeddings and store in Pinecone
+      const embeddings = new HuggingFaceInferenceEmbeddings({
+        apiKey: process.env.HUGGINGFACE_API_KEY,
+        model: "sentence-transformers/all-MiniLM-L6-v2",
+      });
+
+      await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
+        pineconeIndex,
+        namespace: createdFile.id,
+        maxConcurrency: 5, // Add concurrency limit for better performance
+      });
+
+      // Update database with success status
+      await db.file.update({
+        data: { uploadStatus: "SUCCESS" },
+        where: { id: createdFile.id },
+      });
+    } catch (err) {
+      console.error("Error in async processing:", err);
+
+      // Update database with error status
+      await db.file.update({
+        data: { uploadStatus: "FAILED" },
+        where: { id: createdFile.id },
+      });
+
+      // Re-throw to be caught by outer catch block
+      throw err;
+    }
+
+    return {
+      success: true,
+      file: {
+        key: file.key,
+        name: file.name,
+        url: `https://9syn0q6snr.ufs.sh/f/${file.key}`,
       },
-      where: {
-        id: createdFile.id,
-      },
-    });
-    console.log("File processing marked as FAILED.");
+    };
+  } catch (error) {
+    console.error("Error in onUploadComplete:", error);
+
+    // For UploadThing, you might want to throw an UploadThingError instead of returning
+    throw new UploadThingError(
+      error instanceof Error ? error.message : "Failed to process upload"
+    );
   }
-}
+};
+
+// FileRouter for your app
+export const ourFileRouter = {
+  freePlanUploader: f({ pdf: { maxFileSize: "4MB" } })
+    .middleware(middleware)
+    .onUploadComplete(onUploadComplete),
+  proPlanUploader: f({ pdf: { maxFileSize: "16MB" } })
+    .middleware(middleware)
+    .onUploadComplete(onUploadComplete),
+} satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;
