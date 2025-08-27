@@ -12,7 +12,10 @@ const Providers = ({ children }: PropsWithChildren) => {
     trpc.createClient({
       links: [
         httpBatchLink({
-          url: "http://localhost:3000/api/trpc",
+          url:
+            process.env.NODE_ENV === "production"
+              ? "http://pdfsense-vert.vercel.app/api/trpc"
+              : "http://localhost:3000/api/trpc",
         }),
       ],
     })
