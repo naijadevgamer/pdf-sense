@@ -5,7 +5,8 @@ import { db } from "@/db";
 import { z } from "zod";
 import { INFINITE_QUERY_LIMIT } from "@/config/infinite-query";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-import { utapi } from "@/app/api/uploadthing/route";
+// import { utapi } from "@/lib/uploadthing";
+import { utapi } from "./uploadthing";
 import { getPineconeClient } from "@/lib/pinecone";
 import { absoluteUrl } from "@/lib/utils";
 import { getUserSubscriptionPlan, stripe } from "@/lib/stripe";
@@ -375,24 +376,6 @@ export const appRouter = router({
             "An unexpected error occurred while deleting the file. Please try again later.",
         });
       }
-      // const { userId } = ctx;
-
-      // const file = await db.file.findFirst({
-      //   where: {
-      //     id: input.id,
-      //     userId,
-      //   },
-      // });
-
-      // if (!file) throw new TRPCError({ code: "NOT_FOUND" });
-
-      // await db.file.delete({
-      //   where: {
-      //     id: input.id,
-      //   },
-      // });
-
-      // return file;
     }),
 });
 

@@ -1,4 +1,4 @@
-import { AppRouter } from "@/trpc";
+import { AppRouter } from "@/server/api/root";
 import { inferRouterOutputs } from "@trpc/server";
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
