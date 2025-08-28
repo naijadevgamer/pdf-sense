@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import Image from "next/image";
 import { Icons } from "./Icons";
 import Link from "next/link";
-import { Gem } from "lucide-react";
+import { Gem, User } from "lucide-react";
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/server";
 
 interface UserAccountNavProps {
@@ -32,7 +32,7 @@ const UserAccountNav = async ({
       <DropdownMenuTrigger asChild className="overflow-visible">
         <Button className="rounded-full h-8 w-8 aspect-square bg-slate-400">
           <Avatar className="relative w-8 h-8">
-            {imageUrl ? (
+            {/* {!imageUrl ? (
               <div className="relative aspect-square h-full w-full">
                 <Image
                   fill
@@ -41,12 +41,12 @@ const UserAccountNav = async ({
                   referrerPolicy="no-referrer"
                 />
               </div>
-            ) : (
-              <AvatarFallback>
-                <span className="sr-only">{name}</span>
-                <Icons.user className="h-4 w-4 text-zinc-900" />
-              </AvatarFallback>
-            )}
+            ) : ( */}
+            <AvatarFallback>
+              <span className="sr-only">{name}</span>
+              <User className="h-4 w-4 text-zinc-900" />
+            </AvatarFallback>
+            {/* )} */}
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -74,7 +74,7 @@ const UserAccountNav = async ({
             <Link href="/dashboard/billing">Manage Subscription</Link>
           ) : (
             <Link href="/pricing">
-              Upgrade <Gem className="text-blue-600 h-4 w-4 ml-1.5" />
+              Upgrade <Gem className="text-primary h-4 w-4 ml-1.5" />
             </Link>
           )}
         </DropdownMenuItem>
