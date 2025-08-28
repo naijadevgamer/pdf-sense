@@ -14,7 +14,7 @@ const Providers = ({ children }: PropsWithChildren) => {
         httpBatchLink({
           url:
             process.env.NODE_ENV === "production"
-              ? "http://pdfsense-vert.vercel.app/api/trpc"
+              ? "https://pdf-sense.vercel.app/api/trpc"
               : "http://localhost:3000/api/trpc",
         }),
       ],

@@ -34,7 +34,7 @@ export function constructMetadata({
     "AI-powered insights",
     "Upload and search PDFs",
   ],
-  canonicalUrl = "https://pdfsense-vert.vercel.app",
+  canonicalUrl = "https://pdf-sense.vercel.app",
 }: {
   title?: string;
   description?: string;
@@ -48,7 +48,7 @@ export function constructMetadata({
     title,
     description,
     keywords,
-    metadataBase: new URL("https://pdfsense-vert.vercel.app"),
+    metadataBase: new URL("https://pdf-sense.vercel.app"),
 
     authors: [
       {
