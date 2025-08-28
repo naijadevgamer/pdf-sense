@@ -14,11 +14,15 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
-        source: "/sign-out",
+        source: "/log-out",
         destination: "/api/auth/logout",
         permanent: true,
       },
     ];
+  },
+
+  images: {
+    domains: ["gravatar.com"],
   },
 
   /* config options here */
