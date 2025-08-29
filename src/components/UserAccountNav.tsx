@@ -1,4 +1,9 @@
 import { getUserSubscriptionPlan } from "@/lib/stripe";
+import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/server";
+import { Gem, User } from "lucide-react";
+import Link from "next/link";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Button } from "./ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,25 +11,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Button } from "./ui/button";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import Image from "next/image";
-import { Icons } from "./Icons";
-import Link from "next/link";
-import { Gem, User } from "lucide-react";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/server";
 
 interface UserAccountNavProps {
   email: string | undefined;
   name: string;
-  imageUrl: string;
+  imageUrl?: string;
 }
 
-const UserAccountNav = async ({
-  email,
-  imageUrl,
-  name,
-}: UserAccountNavProps) => {
+const UserAccountNav = async ({ email, name }: UserAccountNavProps) => {
   const subscriptionPlan = await getUserSubscriptionPlan();
 
   return (
