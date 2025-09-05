@@ -3,7 +3,14 @@
 
 import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Zap, Brain, Eye } from "lucide-react";
+import {
+  ArrowRight,
+  Sparkles,
+  Zap,
+  Brain,
+  Eye,
+  LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRef } from "react";
@@ -16,7 +23,7 @@ function FeatureCard({
   description,
   delay,
 }: {
-  icon: any;
+  icon: LucideIcon;
   title: string;
   description: string;
   delay: number;

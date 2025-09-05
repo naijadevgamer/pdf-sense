@@ -1,13 +1,12 @@
 // app/auth-callback/page.tsx
 "use client";
 
-import React, { Suspense, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Sparkles } from "lucide-react";
-import { trpc } from "../_trpc/client";
-import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { FloatingBackground } from "@/components/FloatingBackground";
+import { Loader2, Sparkles } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { toast } from "sonner";
+import { trpc } from "../_trpc/client";
 
 const AuthCallbackInner = () => {
   const router = useRouter();
@@ -58,7 +57,7 @@ const AuthCallbackInner = () => {
           Preparing Your Experience
         </h3>
         <p className="text-gray-600 mb-6">
-          We're setting up your personalized AI document assistant
+          We&apos;re setting up your personalized AI document assistant
         </p>
         <div className="flex items-center justify-center gap-3">
           <Loader2 className="h-6 w-6 animate-spin text-blue-600" />

@@ -5,16 +5,15 @@ import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
-  GraduationCap,
+  BookOpen,
   Briefcase,
+  Building,
+  FileCheck,
+  GraduationCap,
   Heart,
   Scale,
-  BookOpen,
-  Building,
   Sparkles,
-  Users,
-  FileCheck,
-  Target,
+  Target
 } from "lucide-react";
 import Link from "next/link";
 
@@ -225,7 +224,7 @@ export default function UseCasesPage() {
                     </div>
                   </div>
                   <p className="text-gray-600 italic">
-                    "{testimonial.content}"
+                    &quot;{testimonial.content}&quot;
                   </p>
                 </motion.div>
               ))}

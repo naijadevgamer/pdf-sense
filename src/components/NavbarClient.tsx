@@ -12,7 +12,14 @@ import MobileNav from "./MobileNav";
 import { LoginLink, RegisterLink } from "@kinde-oss/kinde-auth-nextjs";
 import { usePathname } from "next/navigation";
 
-export default function NavbarClient({ user }: { user: any }) {
+export interface User {
+  given_name?: string | null;
+  family_name?: string | null;
+  email?: string | null;
+  picture?: string | null;
+}
+
+export default function NavbarClient({ user }: { user: User }) {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const groundNav = /^\/dashboard\/[^/]+$/.test(pathname);

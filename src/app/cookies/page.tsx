@@ -5,14 +5,11 @@ import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
-  Cookie,
-  Settings,
-  Shield,
-  Eye,
-  Database,
-  Sparkles,
   ArrowLeft,
   CheckCircle,
+  Cookie,
+  Settings,
+  Shield
 } from "lucide-react";
 import Link from "next/link";
 

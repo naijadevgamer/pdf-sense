@@ -137,8 +137,8 @@ export default function APIPage() {
               </span>
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Integrate PDFSense's advanced AI document analysis capabilities
-              directly into your applications with our robust API.
+              Integrate PDFSense&apos;s advanced AI document analysis
+              capabilities directly into your applications with our robust API.
             </p>
           </motion.div>
 

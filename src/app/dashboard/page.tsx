@@ -9,10 +9,12 @@ import { redirect } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { FloatingBackground } from "@/components/FloatingBackground";
+import { SubscriptionPlan } from "@/components/MobileNav";
 
 const Page = () => {
   const { user, isLoading: userLoading } = useKindeBrowserClient();
-  const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
+  const [subscriptionPlan, setSubscriptionPlan] =
+    useState<SubscriptionPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -54,7 +56,9 @@ const Page = () => {
           className="relative z-10"
         >
           <MaxWidthWrapper className="pt-24 relative z-10">
-            <Dashboard subscriptionPlan={subscriptionPlan} />
+            <Dashboard
+              subscriptionPlan={subscriptionPlan as SubscriptionPlan}
+            />
           </MaxWidthWrapper>
         </motion.div>
       </AnimatePresence>

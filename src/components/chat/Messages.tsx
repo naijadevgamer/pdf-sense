@@ -1,14 +1,14 @@
 import { trpc } from "@/app/_trpc/client";
 import { INFINITE_QUERY_LIMIT } from "@/config/infinite-query";
-import { Brain, Loader2, MessageSquare, Sparkles } from "lucide-react";
-import Skeleton from "react-loading-skeleton";
-import Message from "./Message";
-import { useContext, useEffect, useRef } from "react";
 import { ChatContext } from "@/context/ChatContext";
 import { useIntersection } from "@mantine/hooks";
+import { Brain, Loader2, Sparkles } from "lucide-react";
+import { useContext, useEffect, useRef } from "react";
+import Skeleton from "react-loading-skeleton";
 import { toast } from "sonner";
+import Message from "./Message";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface MessagesProps {
   fileId: string;

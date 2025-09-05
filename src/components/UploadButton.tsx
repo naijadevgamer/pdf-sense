@@ -1,23 +1,23 @@
 // components/UploadButton.tsx
 "use client";
 
+import { trpc } from "@/app/_trpc/client";
+import { useUploadThing } from "@/lib/uploadthing";
+import { motion } from "framer-motion";
+import { File, Loader2, Sparkles, UploadCloud, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Dropzone from "react-dropzone";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
-  DialogTitle,
   DialogDescription,
+  DialogTitle,
+  DialogTrigger,
 } from "./ui/dialog";
-import Dropzone from "react-dropzone";
-import { File, Loader2, UploadCloud, X, Zap, Sparkles } from "lucide-react";
 import { Progress } from "./ui/progress";
-import { toast } from "sonner";
-import { trpc } from "@/app/_trpc/client";
-import { useUploadThing } from "@/lib/uploadthing";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 
 type UploadDropzoneProps = {
   isSubscribed: boolean;

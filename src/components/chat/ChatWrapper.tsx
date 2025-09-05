@@ -59,7 +59,7 @@ const ChatWrapper = ({ fileId, isSubscribed }: ChatWrapperProps) => {
               Preparing Your PDF
             </h3>
             <p className="text-gray-600">
-              We're getting everything ready for you
+              We&apos;re getting everything ready for you
             </p>
           </div>
         </motion.div>

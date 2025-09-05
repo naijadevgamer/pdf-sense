@@ -6,19 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import {
-  Search,
+  AppWindowIcon,
+  ArrowRight,
   BookOpen,
   Code,
-  FileText,
   GitBranch,
-  Server,
-  Database,
-  Key,
-  Sparkles,
-  ArrowRight,
-  Users,
   MessageCircle,
-  AppWindowIcon,
+  Search,
+  Server,
+  Users
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";

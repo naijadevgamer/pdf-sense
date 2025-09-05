@@ -3,19 +3,17 @@
 
 import { trpc } from "@/app/_trpc/client";
 import { format } from "date-fns";
+import { motion, Variants } from "framer-motion";
 import {
+  Brain,
+  FileText,
+  FolderOpen,
   Ghost,
   Loader2,
   MessageSquare,
-  Plus,
+  Sparkles,
   Trash2,
   Zap,
-  Brain,
-  FileText,
-  Sparkles,
-  FolderOpen,
-  BarChart3,
-  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -23,17 +21,17 @@ import Skeleton from "react-loading-skeleton";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import UploadButton from "./UploadButton";
-import { motion } from "framer-motion";
+import { SubscriptionPlan } from "./MobileNav";
 
 interface PageProps {
-  subscriptionPlan: any;
+  subscriptionPlan: SubscriptionPlan;
 }
 
 const Dashboard = ({ subscriptionPlan }: PageProps) => {
   const [currentlyDeletingFile, setCurrentlyDeletingFile] = useState<
     string | null
   >(null);
-  const [hoveredFile, setHoveredFile] = useState<string | null>(null);
+  // const [hoveredFile, setHoveredFile] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -99,7 +97,7 @@ const Dashboard = ({ subscriptionPlan }: PageProps) => {
     },
   };
 
-  const itemVariants: any = {
+  const itemVariants: Variants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
@@ -192,8 +190,8 @@ const Dashboard = ({ subscriptionPlan }: PageProps) => {
                 variants={itemVariants}
                 whileHover={{ y: -8, scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onHoverStart={() => setHoveredFile(file.id)}
-                onHoverEnd={() => setHoveredFile(null)}
+                // onHoverStart={() => setHoveredFile(file.id)}
+                // onHoverEnd={() => setHoveredFile(null)}
                 className="group relative bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
               >
                 {/* Hover effect overlay */}

@@ -2,8 +2,9 @@
 "use client";
 
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
-import { Gem, User, CreditCard } from "lucide-react";
+import { Gem, User } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
@@ -13,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { useEffect, useState } from "react";
+import { SubscriptionPlan } from "./MobileNav";
 
 interface UserAccountNavProps {
   email: string;
@@ -21,8 +22,9 @@ interface UserAccountNavProps {
   imageUrl?: string;
 }
 
-const UserAccountNav = ({ email, name, imageUrl }: UserAccountNavProps) => {
-  const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
+const UserAccountNav = ({ email, name }: UserAccountNavProps) => {
+  const [subscriptionPlan, setSubscriptionPlan] =
+    useState<SubscriptionPlan | null>(null);
 
   useEffect(() => {
     const fetchSubscription = async () => {

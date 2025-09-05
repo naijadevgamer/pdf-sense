@@ -66,7 +66,7 @@ export default function NotFoundPage() {
           transition={{ delay: 0.4 }}
           className="text-lg text-gray-600 mb-8 max-w-md"
         >
-          The page you're looking for seems to have wandered off{dots}
+          The page you&apos;re looking for seems to have wandered off{dots}
         </motion.p>
 
         <motion.div

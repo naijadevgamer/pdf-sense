@@ -15,19 +15,19 @@ import { cn } from "@/lib/utils";
 import { motion, useInView } from "framer-motion";
 import {
   ArrowRight,
-  Check,
-  HelpCircle,
-  Minus,
-  Sparkles,
-  Zap,
-  Crown,
-  Star,
-  Rocket,
   BadgeCheck,
+  Check,
+  Crown,
+  HelpCircle,
   InfinityIcon,
+  Minus,
+  Rocket,
+  Sparkles,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
+import { User } from "./NavbarClient";
 
 function PricingCard({
   plan,
@@ -40,9 +40,9 @@ function PricingCard({
   plan: string;
   tagline: string;
   quota: number;
-  features: any[];
+  features: { text: string; footnote?: string; negative?: boolean }[];
   isPro?: boolean;
-  user: any;
+  user: User;
 }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -243,7 +243,7 @@ function PricingCard({
   );
 }
 
-const Pricing = ({ user }: { user: any }) => {
+const Pricing = ({ user }: { user: User }) => {
   const pricingItems = [
     {
       plan: "Free",

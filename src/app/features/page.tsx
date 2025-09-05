@@ -4,20 +4,7 @@
 import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import {
-  Zap,
-  Brain,
-  Eye,
-  Shield,
-  Clock,
-  Globe,
-  Sparkles,
-  BarChart3,
-  FileText,
-  MessageSquare,
-  CloudUpload,
-  Smartphone,
-} from "lucide-react";
+import { Brain, Clock, Eye, Globe, Shield, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 
 const features = [

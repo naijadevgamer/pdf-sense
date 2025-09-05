@@ -5,17 +5,13 @@ import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
-  Users,
-  MessageCircle,
-  Star,
-  TrendingUp,
-  Calendar,
   Award,
-  Sparkles,
-  GitBranch,
-  Heart,
-  Share2,
   BookOpen,
+  Calendar,
+  Heart,
+  MessageCircle,
+  Share2,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 

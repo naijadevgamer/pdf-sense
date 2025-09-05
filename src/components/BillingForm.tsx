@@ -25,7 +25,11 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 interface BillingFormProps {
-  subscriptionPlan: any;
+  subscriptionPlan: {
+    isSubscribed: boolean;
+    isCanceled: boolean;
+    stripeCurrentPeriodEnd: Date | null;
+  };
 }
 
 const BillingForm = ({ subscriptionPlan }: BillingFormProps) => {
@@ -113,7 +117,7 @@ const BillingForm = ({ subscriptionPlan }: BillingFormProps) => {
               <div className="space-y-3">
                 {features
                   .slice(0, subscriptionPlan.isSubscribed ? 6 : 3)
-                  .map((feature, index) => (
+                  .map((feature) => (
                     <div
                       key={feature}
                       className="flex items-center gap-3 text-sm text-gray-600"
@@ -220,7 +224,7 @@ const BillingForm = ({ subscriptionPlan }: BillingFormProps) => {
           className="mt-8 text-center bg-yellow-50 border border-yellow-200 rounded-2xl p-4"
         >
           <p className="text-sm text-yellow-800">
-            ⚠️ Your subscription is scheduled for cancellation. You'll have
+            ⚠️ Your subscription is scheduled for cancellation. You&apos;ll have
             access until{" "}
             {format(subscriptionPlan.stripeCurrentPeriodEnd!, "MMMM dd, yyyy")}.
           </p>

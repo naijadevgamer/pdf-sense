@@ -1,20 +1,19 @@
 "use client";
 
+import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
-  Menu,
-  X,
-  User,
-  LogOut,
-  Gem,
   CreditCard,
+  Gem,
+  LogOut,
+  Menu,
+  User,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { getUserSubscriptionPlan } from "@/lib/stripe";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs";
 
 interface MobileNavProps {
   isAuth: boolean;
@@ -26,10 +25,16 @@ interface MobileNavProps {
   };
 }
 
+export interface SubscriptionPlan {
+  isSubscribed: boolean;
+  isCanceled: boolean;
+  stripeCurrentPeriodEnd: Date | null;
+}
+
 const MobileNav = ({ isAuth, user }: MobileNavProps) => {
   const [isOpen, setOpen] = useState<boolean>(false);
-  const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
-
+  const [subscriptionPlan, setSubscriptionPlan] =
+    useState<SubscriptionPlan | null>(null);
   const toggleOpen = () => setOpen((prev) => !prev);
 
   const pathname = usePathname();

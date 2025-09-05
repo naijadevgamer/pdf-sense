@@ -5,14 +5,13 @@ import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
+  AlertTriangle,
+  ArrowLeft,
+  BookOpen,
   FileText,
   Scale,
-  AlertTriangle,
-  BookOpen,
-  UserCheck,
-  Sparkles,
-  ArrowLeft,
   Shield,
+  UserCheck,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -210,17 +209,17 @@ export default function TermsOfServicePage() {
               </h3>
               <p className="text-gray-600 mb-6">
                 We may offer beta features that are still in development. These
-                features are provided "as is" and may be discontinued at any
-                time without notice.
+                features are provided &quot;as is&quot; and may be discontinued
+                at any time without notice.
               </p>
 
               <h3 className="text-lg font-medium text-gray-900 mb-3">
                 Force Majeure
               </h3>
               <p className="text-gray-600">
-                We're not liable for any failure to perform due to circumstances
-                beyond our reasonable control, including natural disasters, war,
-                terrorism, or internet outages.
+                We&apos;re not liable for any failure to perform due to
+                circumstances beyond our reasonable control, including natural
+                disasters, war, terrorism, or internet outages.
               </p>
             </div>
           </motion.div>

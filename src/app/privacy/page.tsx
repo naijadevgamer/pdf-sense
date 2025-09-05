@@ -5,15 +5,14 @@ import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
-  Shield,
-  Eye,
-  Lock,
-  Database,
-  User,
-  Server,
-  Sparkles,
   ArrowLeft,
+  Database,
+  Eye,
   FileText,
+  Lock,
+  Server,
+  Shield,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -182,7 +181,7 @@ export default function PrivacyPolicyPage() {
               </p>
 
               <h3 className="text-lg font-medium text-gray-900 mb-3">
-                Children's Privacy
+                Children&apos;s Privacy
               </h3>
               <p className="text-gray-600 mb-6">
                 Our services are not intended for children under 16. We do not

@@ -7,16 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import {
+  ArrowRight,
+  Clock,
+  HeadphonesIcon,
   Mail,
-  Phone,
   MapPin,
   MessageCircle,
-  Clock,
+  Phone,
   Send,
-  Sparkles,
-  HeadphonesIcon,
-  Zap,
-  ArrowRight,
+  Zap
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -119,8 +118,8 @@ export default function ContactPage() {
               </span>
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Have questions or need support? We're here to help you succeed
-              with PDFSense.
+              Have questions or need support? We&apos;re here to help you
+              succeed with PDFSense.
             </p>
           </motion.div>
 
