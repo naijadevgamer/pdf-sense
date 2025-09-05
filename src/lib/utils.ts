@@ -13,10 +13,10 @@ export function absoluteUrl(path: string) {
 }
 
 export function constructMetadata({
-  title = "PDFSense - AI-powered PDF Assistant",
+  title = "PDFSense | AI-powered PDF Assistant",
   description = "Upload PDFs and ask anything—AI-powered insights at your fingertips.",
   image = "/thumbnail.png",
-  icons = "/favicon.ico",
+  icons = "/pdfsense.png",
   noIndex = false,
   keywords = [
     "PDFSense",
@@ -86,7 +86,7 @@ export function constructMetadata({
     alternates: {
       canonical: canonicalUrl,
     },
-    themeColor: "#FFF",
+    // themeColor: "#FFF",
 
     ...(noIndex && {
       robots: {

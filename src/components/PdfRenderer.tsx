@@ -178,7 +178,7 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
 
       {/* PDF Main */}
       <div className="flex-1 w-full max-h-screen min-w-0">
-        <SimpleBar autoHide={false} className="max-h-[calc(100vh-8rem)]">
+        <SimpleBar autoHide={false} className="max-h-[calc(100vh-8.5rem)]">
           <div ref={ref}>
             <Document
               loading={

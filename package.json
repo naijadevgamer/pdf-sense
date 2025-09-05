@@ -11,6 +11,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^4.1.2",
     "@huggingface/inference": "^4.7.1",
     "@huggingface/transformers": "^3.4.0",
@@ -39,6 +40,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.12",
+    "gsap": "^3.13.0",
     "langchain": "^0.3.19",
     "lodash": "^4.17.21",
     "lucide-react": "^0.475.0",

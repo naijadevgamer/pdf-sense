@@ -4,9 +4,11 @@ import { cn, constructMetadata } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
 import Providers from "@/components/Provider";
 import { Toaster } from "@/components/ui/sonner";
+import { FloatingBackground } from "@/components/FloatingBackground";
 
 import "react-loading-skeleton/dist/skeleton.css";
 import "simplebar-react/dist/simplebar.min.css";
+import FooterWrapper from "@/components/FooterWrapper";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -21,14 +23,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <Providers>
-        <body
-          className={cn("min-h-screen antialiased grainy", `${sora.className}`)}
-        >
-          <Toaster />
+        <body className={cn("min-h-screen antialiased", `${sora.className}`)}>
+          <FloatingBackground />
+          <Toaster richColors />
           <Navbar />
           {children}
+          <FooterWrapper />
         </body>
       </Providers>
     </html>

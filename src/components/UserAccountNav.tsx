@@ -1,6 +1,8 @@
-import { getUserSubscriptionPlan } from "@/lib/stripe";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/server";
-import { Gem, User } from "lucide-react";
+// components/UserAccountNav.tsx
+"use client";
+
+import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import { Gem, User, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
@@ -11,41 +13,49 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { useEffect, useState } from "react";
 
 interface UserAccountNavProps {
-  email: string | undefined;
+  email: string;
   name: string;
   imageUrl?: string;
 }
 
-const UserAccountNav = async ({ email, name }: UserAccountNavProps) => {
-  const subscriptionPlan = await getUserSubscriptionPlan();
+const UserAccountNav = ({ email, name, imageUrl }: UserAccountNavProps) => {
+  const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        const response = await fetch("/api/subscription");
+        if (response.ok) {
+          const data = await response.json();
+          setSubscriptionPlan(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch subscription:", error);
+      }
+    };
+    fetchSubscription();
+  }, []);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild className="overflow-visible">
         <Button className="rounded-full h-8 w-8 aspect-square bg-slate-400">
           <Avatar className="relative w-8 h-8">
-            {/* {!imageUrl ? (
-              <div className="relative aspect-square h-full w-full">
-                <Image
-                  fill
-                  src={imageUrl}
-                  alt="profile picture"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-            ) : ( */}
             <AvatarFallback>
               <span className="sr-only">{name}</span>
               <User className="h-4 w-4 text-zinc-900" />
             </AvatarFallback>
-            {/* )} */}
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent className="bg-white" align="end">
+      <DropdownMenuContent
+        className="bg-white/95 backdrop-blur-sm border border-gray-200/30"
+        align="end"
+      >
         <div className="flex items-center justify-start gap-2 p-2">
           <div className="flex flex-col space-y-0.5 leading-none">
             {name && <p className="font-medium text-sm text-black">{name}</p>}

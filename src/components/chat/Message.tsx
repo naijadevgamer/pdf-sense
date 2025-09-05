@@ -1,10 +1,13 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { ExtendedMessage } from "@/types/message";
-import { Icons } from "../Icons";
+import { User, Bot, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { format } from "date-fns";
 import { forwardRef } from "react";
 import remarkGfm from "remark-gfm";
+import { motion } from "framer-motion";
 
 interface MessageProps {
   message: ExtendedMessage;
@@ -14,71 +17,110 @@ interface MessageProps {
 const Message = forwardRef<HTMLDivElement, MessageProps>(
   ({ message, isNextMessageSamePerson }, ref) => {
     return (
-      <div
+      <motion.div
         ref={ref}
-        className={cn("flex items-end", {
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={cn("flex items-end gap-1.5 sm:gap-2", {
           "justify-end": message.isUserMessage,
         })}
       >
-        <div
+        {/* Avatar */}
+        <motion.div
+          whileHover={{ scale: 1.1 }}
           className={cn(
-            "relative flex h-6 w-6 aspect-square items-center justify-center",
+            "relative flex size-6 sm:size-8 aspect-square items-center justify-center rounded-xl shadow-sm shrink-0",
             {
-              "order-2 bg-blue-600 rounded-sm": message.isUserMessage,
-              "order-1 bg-zinc-800 rounded-sm": !message.isUserMessage,
+              "order-2 bg-gradient-to-r from-blue-600 to-purple-600":
+                message.isUserMessage,
+              "order-1 bg-gradient-to-r from-gray-600 to-gray-700":
+                !message.isUserMessage,
               invisible: isNextMessageSamePerson,
             }
           )}
         >
           {message.isUserMessage ? (
-            <Icons.user className="fill-zinc-200 text-zinc-200 h-3/4 w-3/4" />
+            <User className="size-3 sm:size-4 shrink-0 text-white" />
           ) : (
-            <Icons.logo className="fill-zinc-300 h-3/4 w-3/4" />
+            <Bot className="size-3 sm:size-4 shrink-0 text-white" />
           )}
-        </div>
+        </motion.div>
 
+        {/* Message Content */}
         <div
-          className={cn("flex flex-col space-y-2 text-base max-w-md mx-2", {
+          className={cn("flex flex-col space-y-1 max-w-md", {
             "order-1 items-end": message.isUserMessage,
             "order-2 items-start": !message.isUserMessage,
           })}
         >
-          <div
-            className={cn("px-4 py-2 rounded-lg inline-block", {
-              "bg-blue-600 text-white": message.isUserMessage,
-              "bg-gray-200 text-gray-900": !message.isUserMessage,
-              "rounded-br-none":
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            className={cn("px-2 py-2 sm:px-4 sm:py-3 rounded-2xl shadow-sm", {
+              "bg-gradient-to-r from-blue-600 to-purple-600 text-white":
+                message.isUserMessage,
+              "bg-white text-gray-900 border border-gray-200":
+                !message.isUserMessage,
+              "rounded-br-sm":
                 !isNextMessageSamePerson && message.isUserMessage,
-              "rounded-bl-none":
+              "rounded-bl-sm":
                 !isNextMessageSamePerson && !message.isUserMessage,
             })}
           >
             {typeof message.text === "string" ? (
               <div
-                className={cn("prose", {
-                  "text-zinc-50": message.isUserMessage,
+                className={cn("prose prose-sm max-w-none", {
+                  "prose-invert": message.isUserMessage,
                 })}
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ children }) => (
+                      <p className="mb-2 last:mb-0">{children}</p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="list-disc list-inside mb-2">{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="list-decimal list-inside mb-2">
+                        {children}
+                      </ol>
+                    ),
+                    li: ({ children }) => <li className="mb-1">{children}</li>,
+                    code: ({ children }) => (
+                      <code className="bg-gray-100 rounded px-1 py-0.5 text-sm font-mono">
+                        {children}
+                      </code>
+                    ),
+                    pre: ({ children }) => (
+                      <pre className="bg-gray-100 rounded-lg p-3 overflow-x-auto my-2">
+                        {children}
+                      </pre>
+                    ),
+                  }}
+                >
                   {message.text}
                 </ReactMarkdown>
               </div>
             ) : (
               message.text
             )}
-            {message.id !== "loading-message" ? (
+
+            {message.id !== "loading-message" && (
               <div
-                className={cn("text-xs select-none mt-2 w-full text-right", {
-                  "text-zinc-500": !message.isUserMessage,
-                  "text-blue-300": message.isUserMessage,
+                className={cn("text-xs mt-2 flex items-center gap-1", {
+                  "text-blue-100": message.isUserMessage,
+                  "text-gray-500": !message.isUserMessage,
                 })}
               >
+                {!message.isUserMessage && <Sparkles className="h-3 w-3" />}
                 {format(new Date(message.createdAt), "HH:mm")}
               </div>
-            ) : null}
-          </div>
+            )}
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 );
