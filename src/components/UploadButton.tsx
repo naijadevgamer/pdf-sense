@@ -96,9 +96,9 @@ const UploadDropzone = ({
       {({ getRootProps, getInputProps, acceptedFiles }) => (
         <div
           {...getRootProps()}
-          className="border-2 border-dashed border-gray-300 rounded-2xl bg-white/80 backdrop-blur-sm transition-all hover:border-blue-400 hover:shadow-lg"
+          className="border-2 border-dashed border-gray-300  rounded-2xl bg-white/80 backdrop-blur-sm transition-all hover:border-blue-400 hover:shadow-lg w-full"
         >
-          <div className="flex items-center justify-center p-8">
+          <div className="flex items-center justify-center p-3 md:p-8">
             <div className="flex flex-col items-center justify-center w-full cursor-pointer">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -111,7 +111,7 @@ const UploadDropzone = ({
                 </div>
               </motion.div>
 
-              <div className="text-center mb-6">
+              <div className="text-center mb-2 md:mb-6">
                 <p className="text-lg font-semibold text-gray-900 mb-2">
                   Drop your PDF here
                 </p>
@@ -127,7 +127,7 @@ const UploadDropzone = ({
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="max-w-xs bg-white flex items-center rounded-xl shadow-md border border-gray-200 overflow-hidden mb-6"
+                  className="w-52 sm:w-fit sm:max-w-xs px-2 flex items-center rounded-xl shadow-md border border-gray-200 overflow-hidden mb-2 md:mb-6"
                 >
                   <div className="p-3 bg-blue-50">
                     <File className="h-5 w-5 text-blue-600" />
@@ -147,7 +147,7 @@ const UploadDropzone = ({
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="w-full max-w-md space-y-4"
+                  className="w-full max-w-md space-y-2 sm:space-y-4"
                 >
                   <div className="flex items-center justify-between text-sm text-gray-600">
                     <span>Uploading...</span>
@@ -251,28 +251,20 @@ const UploadButton = ({ isSubscribed }: { isSubscribed: boolean }) => {
         </motion.div>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl">
+      <DialogContent className="max-w-xs sm:max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-6"
+          className="flex items-center justify-between md:mb-2"
         >
           <div>
-            <DialogTitle className="text-2xl font-bold text-gray-900">
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900">
               Upload Document
             </DialogTitle>
             <DialogDescription className="text-gray-600 mt-1">
               Add a PDF to start chatting with AI
             </DialogDescription>
           </div>
-          {/* <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsOpen(false)}
-            className="rounded-full hover:bg-gray-100"
-          >
-            <X className="h-4 w-4" />
-          </Button> */}
         </motion.div>
 
         <UploadDropzone
@@ -287,7 +279,7 @@ const UploadButton = ({ isSubscribed }: { isSubscribed: boolean }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex items-center gap-2 text-xs text-gray-500 mt-4"
+          className="flex items-center gap-2 text-xs text-gray-500 md:mt-2"
         >
           <Zap className="h-3 w-3 text-yellow-500" />
           <span>AI-powered document analysis</span>
