@@ -157,6 +157,8 @@ export const POST = async (req: NextRequest) => {
             if (chunk.choices && chunk.choices.length > 0) {
               const text = chunk.choices[0].delta.content;
               if (text) {
+                // Add small delay to make streaming visible
+                await new Promise((resolve) => setTimeout(resolve, 20)); // 20ms delay
                 controller.enqueue(text);
                 generatedText += text;
                 console.log("Generated text chunk:", text);
