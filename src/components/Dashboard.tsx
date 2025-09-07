@@ -119,7 +119,7 @@ const Dashboard = ({ subscriptionPlan }: PageProps) => {
         className="mb-12"
       >
         <div className="flex flex-col items-start justify-between gap-6 pb-8 border-b border-gray-200">
-          <div className="flex items-center gap-4">
+          <div className="flex items-start md:items-center gap-4">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -129,7 +129,9 @@ const Dashboard = ({ subscriptionPlan }: PageProps) => {
               <FolderOpen className="h-8 w-8 text-white" />
             </motion.div>
             <div>
-              <h1 className="text-4xl font-bold text-gray-900">My Documents</h1>
+              <h1 className="text-2xl sm:text-4xl font-bold text-gray-900">
+                My Documents
+              </h1>
               <p className="text-gray-600 mt-2">
                 Manage and interact with your uploaded PDF files
               </p>
@@ -190,8 +192,6 @@ const Dashboard = ({ subscriptionPlan }: PageProps) => {
                 variants={itemVariants}
                 whileHover={{ y: -8, scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                // onHoverStart={() => setHoveredFile(file.id)}
-                // onHoverEnd={() => setHoveredFile(null)}
                 className="group relative bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
               >
                 {/* Hover effect overlay */}
@@ -202,7 +202,7 @@ const Dashboard = ({ subscriptionPlan }: PageProps) => {
 
                 <Link
                   href={`/dashboard/${file.id}`}
-                  className="flex flex-col gap-4 p-6 relative z-10"
+                  className="flex flex-col gap-4 p-4 sm:p-6 relative z-10"
                 >
                   <div className="flex items-center justify-between">
                     <motion.div
@@ -231,7 +231,7 @@ const Dashboard = ({ subscriptionPlan }: PageProps) => {
                   </div>
                 </Link>
 
-                <div className="px-6 pb-4 grid grid-cols-2 gap-4 relative z-10">
+                <div className="px-4 sm:px-6 pb-4 grid grid-cols-2 gap-4 relative z-10">
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <MessageSquare className="h-4 w-4" />
                     <span>Ready</span>
@@ -318,7 +318,7 @@ const Dashboard = ({ subscriptionPlan }: PageProps) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6"
+          className="my-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
             <div className="flex items-center gap-4">

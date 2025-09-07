@@ -27,7 +27,8 @@ export default function RootLayout({
       <Providers>
         <body className={cn("min-h-screen antialiased", `${sora.className}`)}>
           <FloatingBackground />
-          <Toaster richColors />
+          <Toaster richColors position="top-center" className="md:hidden" />
+          <Toaster richColors className="hidden md:block" />
           <Navbar />
           {children}
           <FooterWrapper />

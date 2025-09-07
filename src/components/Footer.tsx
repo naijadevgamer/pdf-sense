@@ -5,7 +5,7 @@ import {
   ArrowUp,
   MessageSquare,
   Github,
-  X,
+  Twitter,
   Linkedin,
   Sparkles,
 } from "lucide-react";
@@ -26,7 +26,7 @@ const Footer = () => {
         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-100/30 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-12">
+      <div className="relative z-10 container mx-auto px-2 sm:px-6 pt-12 pb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Brand section */}
           <motion.div
@@ -38,7 +38,7 @@ const Footer = () => {
             <Link href="/" className="flex items-center space-x-2 mb-4">
               <div className="relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur opacity-30" />
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text relative">
+                <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text relative">
                   PDFSense.
                 </h3>
               </div>
@@ -66,7 +66,7 @@ const Footer = () => {
                 size="icon"
                 className="rounded-full bg-gray-100 hover:bg-gray-200"
               >
-                <X className="h-5 w-5 text-gray-600" />
+                <Twitter className="h-5 w-5 text-gray-600" />
               </Button>
               <Button
                 variant="ghost"
@@ -174,10 +174,10 @@ const Footer = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-2xl p-8 mb-12 text-center"
+          className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-2xl p-6 sm:p-8 mb-12 text-center"
         >
           <div className="max-w-2xl mx-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
               Ready to transform your document workflow?
             </h3>
             <p className="text-gray-600 mb-6">
@@ -205,7 +205,7 @@ const Footer = () => {
             © {new Date().getFullYear()} PDFSense. All rights reserved.
           </p>
 
-          <div className="flex items-center space-x-6 text-sm">
+          <div className="flex items-center space-x-6 text-xs sm:text-sm">
             <Link
               href="/privacy"
               className="text-gray-500 hover:text-blue-600 transition-colors"
@@ -237,6 +237,7 @@ const Footer = () => {
           </div>
         </motion.div>
       </div>
+
       {/* Floating particles */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <ClientOnlyParticles />

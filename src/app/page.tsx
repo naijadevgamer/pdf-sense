@@ -84,7 +84,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{ duration: 0.7 }}
-            className="max-w-4xl text-2xl sm:text-5xl font-bold md:text-6xl lg:text-7xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-gradient"
+            className="max-w-4xl text-3xl sm:text-5xl font-bold md:text-6xl lg:text-7xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-gradient"
           >
             Conversational Intelligence for Your Documents
           </motion.h1>
@@ -129,16 +129,16 @@ export default function Home() {
       </div>
 
       {/* Features Section */}
-      <div className="relative py-24 overflow-hidden">
+      <div className="relative py-20 sm:py-20:sm:py-24 overflow-hidden">
         <MaxWidthWrapper>
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.7 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-16"
           >
-            <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+            <h2 className="text-2xl font-bold text-gray-900 sm:text-4xl">
               Revolutionary Document Interaction
             </h2>
             <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
@@ -171,7 +171,7 @@ export default function Home() {
       </div>
 
       {/* Demo Section */}
-      <div className="relative py-24 bg-gradient-to-br from-blue-50 to-purple-50 overflow-hidden">
+      <div className="relative py-20 sm:py-24 bg-gradient-to-br from-blue-50 to-purple-50 overflow-hidden">
         <MaxWidthWrapper>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -180,7 +180,7 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+            <h2 className="text-2xl font-bold text-gray-900 sm:text-4xl">
               See It In Action
             </h2>
             <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
@@ -197,9 +197,9 @@ export default function Home() {
             className="relative rounded-3xl overflow-hidden shadow-2xl"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-20" />
-            <div className="relative bg-white/80 backdrop-blur-sm p-8 md:p-12">
+            <div className="relative bg-white/80 backdrop-blur-sm p-4 sm:p-8 md:p-12">
               <div className="aspect-video bg-gray-900/5 rounded-lg flex items-center justify-center">
-                <div className="text-center">
+                <div className="text-center p-2">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4">
                     <Sparkles className="h-8 w-8 text-white" />
                   </div>
