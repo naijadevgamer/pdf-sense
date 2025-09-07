@@ -317,63 +317,68 @@ export const appRouter = router({
   deleteFile: privateProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const { userId } = ctx;
+      const { id } = input;
+
+      if (!userId) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const file = await db.file.findFirst({
+        where: {
+          id,
+          userId, // Ensures the file belongs to the authenticated user
+        },
+      });
+
+      if (!file) throw new TRPCError({ code: "NOT_FOUND" });
+
       try {
-        const { userId } = ctx;
-        const { id } = input;
+        // Execute all deletion operations in parallel
+        const [pineconeResult, uploadThingResult] = await Promise.allSettled([
+          // Delete from Pinecone
+          (async () => {
+            const pinecone = await getPineconeClient();
+            const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
+            await pineconeIndex.namespace(id).deleteAll();
+          })(),
 
-        if (!userId) {
-          throw new TRPCError({ code: "UNAUTHORIZED" });
-        }
+          // Delete from UploadThing
+          (async () => {
+            if (file.key) {
+              await utapi.deleteFiles(file.key);
+            }
+          })(),
+        ]);
 
-        const file = await db.file.findFirst({
-          where: {
-            id,
-            userId, // Ensures the file belongs to the authenticated user
-          },
-        });
+        // Check if any deletion failed
+        const failures = [
+          pineconeResult.status === "rejected" && pineconeResult.reason,
+          uploadThingResult.status === "rejected" && uploadThingResult.reason,
+        ].filter(Boolean);
 
-        if (!file) throw new TRPCError({ code: "NOT_FOUND" });
-
-        // 3. Remove related Pinecone index
-        const pinecone = await getPineconeClient();
-        if (!process.env.PINECONE_INDEX) {
+        if (failures.length > 0) {
+          console.error("Partial deletion failures:", failures);
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Pinecone index name is missing.",
+            message: `Failed to completely delete file: ${failures.join(", ")}`,
           });
         }
-        const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX);
 
-        // 3. Delete file from UploadThing
-        if (file.key) {
-          await utapi.deleteFiles(file.key);
-        }
-
-        // 4. Remove related Pinecone index
-        await pineconeIndex.namespace(id).deleteAll();
-
+        // Finally delete from database
         await db.file.delete({
-          where: {
-            id: input.id,
-          },
+          where: { id },
         });
 
         return file;
       } catch (error) {
         if (error instanceof TRPCError) {
-          throw error; // If it's a known tRPC error, rethrow it
+          throw error;
         }
-        if (error instanceof PrismaClientKnownRequestError) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `Database error: ${error.message}`,
-          });
-        }
-        // Handle unexpected errors
+
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message:
-            "An unexpected error occurred while deleting the file. Please try again later.",
+          message: "An unexpected error occurred while deleting the file.",
         });
       }
     }),

@@ -8,6 +8,8 @@ import { UploadThingError } from "uploadthing/server";
 import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
 import { getUserSubscriptionPlan } from "@/lib/stripe";
 import { PLANS } from "@/config/stripe";
+import { $Enums } from "@prisma/client";
+import { utapi } from "@/server/api/uploadthing";
 
 const f = createUploadthing();
 
@@ -33,6 +35,17 @@ const onUploadComplete = async ({
     url: string;
   };
 }) => {
+  // Use a transaction to ensure all operations succeed or fail together
+  let createdFile: {
+    id: string;
+    name: string;
+    userId: string | null;
+    key: string;
+    url: string;
+    uploadStatus: $Enums.UploadStatus;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null = null;
   try {
     // Check if file already exists
     const existingFile = await db.file.findFirst({
@@ -47,7 +60,7 @@ const onUploadComplete = async ({
     }
 
     // Create file record in database
-    const createdFile = await db.file.create({
+    createdFile = await db.file.create({
       data: {
         key: file.key,
         name: file.name,
@@ -57,89 +70,73 @@ const onUploadComplete = async ({
       },
     });
 
-    try {
-      // Fetch file for processing
-      const response = await fetch(`https://9syn0q6snr.ufs.sh/f/${file.key}`);
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch file: ${response.status} ${response.statusText}`
-        );
-      }
+    // Fetch file for processing
+    const response = await fetch(`https://9syn0q6snr.ufs.sh/f/${file.key}`);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch file: ${response.status} ${response.statusText}`
+      );
+    }
 
-      const blob = await response.blob();
+    const blob = await response.blob();
 
-      // Process PDF
-      const loader = new PDFLoader(blob);
-      const pageLevelDocs = await loader.load();
-      const pagesAmt = pageLevelDocs.length;
+    // Process PDF
+    const loader = new PDFLoader(blob);
+    const pageLevelDocs = await loader.load();
+    const pagesAmt = pageLevelDocs.length;
 
-      // Check page limits based on subscription plan
-      const { subscriptionPlan } = metadata;
-      const { isSubscribed } = subscriptionPlan;
+    // Check page limits based on subscription plan
+    const { subscriptionPlan } = metadata;
+    const { isSubscribed } = subscriptionPlan;
 
-      const proPlan = PLANS.find((plan) => plan.name === "Pro");
-      const freePlan = PLANS.find((plan) => plan.name === "Free");
+    const proPlan = PLANS.find((plan) => plan.name === "Pro");
+    const freePlan = PLANS.find((plan) => plan.name === "Free");
 
-      if (!proPlan || !freePlan) {
-        throw new Error("Subscription plans not configured properly");
-      }
+    if (!proPlan || !freePlan) {
+      throw new Error("Subscription plans not configured properly");
+    }
 
-      const isProExceeded = pagesAmt > proPlan.pagesPerPdf;
-      const isFreeExceeded = pagesAmt > freePlan.pagesPerPdf;
+    const isProExceeded = pagesAmt > proPlan.pagesPerPdf;
+    const isFreeExceeded = pagesAmt > freePlan.pagesPerPdf;
 
-      if (
-        (isSubscribed && isProExceeded) ||
-        (!isSubscribed && isFreeExceeded)
-      ) {
-        await db.file.update({
-          data: { uploadStatus: "FAILED" },
-          where: { id: createdFile.id },
-        });
-        throw new Error(`Page limit exceeded: ${pagesAmt} pages`);
-      }
-
-      // Initialize Pinecone
-      const pinecone = await getPineconeClient();
-      const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
-
-      // Validate environment variables
-      if (!process.env.HUGGINGFACE_API_KEY) {
-        throw new Error("HUGGINGFACE_API_KEY environment variable is not set");
-      }
-
-      if (!process.env.PINECONE_INDEX) {
-        throw new Error("PINECONE_INDEX environment variable is not set");
-      }
-
-      // Initialize embeddings and store in Pinecone
-      const embeddings = new HuggingFaceInferenceEmbeddings({
-        apiKey: process.env.HUGGINGFACE_API_KEY,
-        model: "sentence-transformers/all-MiniLM-L6-v2",
-      });
-
-      await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
-        pineconeIndex,
-        namespace: createdFile.id,
-        maxConcurrency: 5, // Add concurrency limit for better performance
-      });
-
-      // Update database with success status
-      await db.file.update({
-        data: { uploadStatus: "SUCCESS" },
-        where: { id: createdFile.id },
-      });
-    } catch (err) {
-      console.error("Error in async processing:", err);
-
-      // Update database with error status
+    if ((isSubscribed && isProExceeded) || (!isSubscribed && isFreeExceeded)) {
       await db.file.update({
         data: { uploadStatus: "FAILED" },
         where: { id: createdFile.id },
       });
-
-      // Re-throw to be caught by outer catch block
-      throw err;
+      throw new Error(`Page limit exceeded: ${pagesAmt} pages`);
     }
+
+    // Initialize Pinecone
+    const pinecone = await getPineconeClient();
+    const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
+
+    // Validate environment variables
+    if (!process.env.HUGGINGFACE_API_KEY) {
+      throw new Error("HUGGINGFACE_API_KEY environment variable is not set");
+    }
+
+    if (!process.env.PINECONE_INDEX) {
+      throw new Error("PINECONE_INDEX environment variable is not set");
+    }
+
+    // Initialize embeddings and store in Pinecone
+    const embeddings = new HuggingFaceInferenceEmbeddings({
+      apiKey: process.env.HUGGINGFACE_API_KEY,
+      model: "sentence-transformers/all-MiniLM-L6-v2",
+    });
+
+    await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
+      pineconeIndex,
+      namespace: createdFile.id,
+      maxConcurrency: 5, // Add concurrency limit for better performance
+    });
+
+    // Update database with success status
+    await db.file.update({
+      data: { uploadStatus: "SUCCESS" },
+      where: { id: createdFile.id },
+    });
 
     return {
       success: true,
@@ -152,7 +149,34 @@ const onUploadComplete = async ({
   } catch (error) {
     console.error("Error in onUploadComplete:", error);
 
-    // For UploadThing, you might want to throw an UploadThingError instead of returning
+    // Clean up any partially created resources
+    try {
+      if (createdFile) {
+        // Delete from database
+        await db.file.delete({
+          where: { id: createdFile.id },
+        });
+
+        // Delete from Pinecone if it was created
+        try {
+          const pinecone = await getPineconeClient();
+          const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
+          await pineconeIndex.namespace(createdFile.id).deleteAll();
+        } catch (pineconeError) {
+          console.error("Error cleaning up Pinecone:", pineconeError);
+        }
+
+        // Delete from UploadThing
+        try {
+          await utapi.deleteFiles(file.key);
+        } catch (uploadError) {
+          console.error("Error cleaning up uploaded file:", uploadError);
+        }
+      }
+    } catch (cleanupError) {
+      console.error("Error during cleanup:", cleanupError);
+    }
+
     throw new UploadThingError(
       error instanceof Error ? error.message : "Failed to process upload"
     );
