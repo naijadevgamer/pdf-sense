@@ -4,7 +4,14 @@
 import { trpc } from "@/app/_trpc/client";
 import { useUploadThing } from "@/lib/uploadthing";
 import { motion } from "framer-motion";
-import { File, Loader2, Sparkles, UploadCloud, Zap } from "lucide-react";
+import {
+  AlertCircle,
+  File,
+  Loader2,
+  Sparkles,
+  UploadCloud,
+  Zap,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Dropzone from "react-dropzone";
@@ -23,6 +30,8 @@ type UploadDropzoneProps = {
   isSubscribed: boolean;
   isUploading: boolean;
   setIsUploading: React.Dispatch<React.SetStateAction<boolean>>;
+  uploadError: boolean;
+  setUploadError: React.Dispatch<React.SetStateAction<boolean>>;
   isLoading: boolean;
   startPolling: (params: { key: string }) => void;
 };
@@ -31,6 +40,8 @@ const UploadDropzone = ({
   isSubscribed,
   isUploading,
   setIsUploading,
+  uploadError = false,
+  setUploadError,
   isLoading,
   startPolling,
 }: UploadDropzoneProps) => {
@@ -39,18 +50,31 @@ const UploadDropzone = ({
     isSubscribed ? "proPlanUploader" : "freePlanUploader"
   );
 
-  const startSimulatedProgress = () => {
+  const startSimulatedProgress = (timeout: number) => {
     setUploadProgress(0);
 
     const interval = setInterval(() => {
       setUploadProgress((prevProgress) => {
-        if (prevProgress >= 90) {
+        if (prevProgress >= 95) {
           clearInterval(interval);
           return prevProgress;
         }
-        return prevProgress + 0.5;
+        if (prevProgress > 80) {
+          return prevProgress + 0.03;
+        }
+        if (prevProgress > 60) {
+          return prevProgress + 0.2;
+        }
+        if (prevProgress > 40) {
+          return prevProgress + 0.05;
+        }
+        if (prevProgress > 20) {
+          return prevProgress + 0.08;
+        }
+
+        return prevProgress + 0.05;
       });
-    }, 50);
+    }, timeout);
 
     return interval;
   };
@@ -61,10 +85,18 @@ const UploadDropzone = ({
       disabled={isUploading || isLoading}
       onDrop={async (acceptedFile) => {
         setIsUploading(true);
-        const progressInterval = startSimulatedProgress();
+
+        const timeout = +(
+          (acceptedFile[0].size / 1024 / 1024) * 4 +
+          30
+        ).toFixed(2);
+        console.log("Simulated timeout (ms):", timeout);
+        const progressInterval = startSimulatedProgress(timeout);
 
         try {
           const res = await startUpload(acceptedFile);
+
+          console.log("Upload response:", res);
 
           if (!res || res.length === 0) {
             throw new Error("No response from upload");
@@ -85,6 +117,7 @@ const UploadDropzone = ({
           clearInterval(progressInterval);
           setIsUploading(false);
           setUploadProgress(0);
+          setUploadError(true);
 
           toast.error("Upload Failed", {
             description:
@@ -103,37 +136,55 @@ const UploadDropzone = ({
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="relative mb-6"
+                className="relative mb-0 sm:mb-2"
               >
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full blur-lg opacity-20" />
-                <div className="relative p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl">
-                  <UploadCloud className="h-8 w-8 text-white" />
-                </div>
+
+                {uploadError ? (
+                  <div className="relative p-3 sm:p-4 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg md:rounded-2xl">
+                    <AlertCircle className="size-4 sm:size-6 md:size-8 text-white" />
+                  </div>
+                ) : (
+                  <div className="relative p-3 sm:p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg md:rounded-2xl">
+                    <UploadCloud className="size-4 sm:size-6 md:size-8 text-white" />
+                  </div>
+                )}
               </motion.div>
 
-              <div className="text-center mb-2 md:mb-6">
-                <p className="text-lg font-semibold text-gray-900 mb-2">
-                  Drop your PDF here
-                </p>
-                <p className="text-sm text-gray-600">
-                  or click to browse files
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Maximum file size: {isSubscribed ? "16MB" : "4MB"}
-                </p>
+              <div className="text-center mb-0 sm:mb-2">
+                {uploadError ? (
+                  <>
+                    <p className="text-lg font-semibold text-gray-900 mb-2">
+                      Upload failed
+                    </p>
+                    <p className="text-sm text-gray-600">Please try again</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-semibold text-gray-900 mb-2">
+                      Drop your PDF here
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      or click to browse files
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Maximum file size: {isSubscribed ? "16MB" : "4MB"}
+                    </p>
+                  </>
+                )}
               </div>
 
               {acceptedFiles && acceptedFiles[0] ? (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="w-52 sm:w-fit sm:max-w-xs px-2 flex items-center rounded-xl shadow-md border border-gray-200 overflow-hidden mb-2 md:mb-6"
+                  className="w-52 sm:w-fit sm:max-w-xs px-2 flex items-center rounded-xl shadow-md border border-gray-200 overflow-hidden mb-0 sm:mb-2"
                 >
-                  <div className="p-3 bg-blue-50">
+                  <div className="p-2 bg-blue-50">
                     <File className="h-5 w-5 text-blue-600" />
                   </div>
                   <div className="px-4 py-3 flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                       {acceptedFiles[0].name}
                     </p>
                     <p className="text-xs text-gray-500">
@@ -143,14 +194,18 @@ const UploadDropzone = ({
                 </motion.div>
               ) : null}
 
-              {isUploading && (
+              {(isUploading || isLoading) && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="w-full max-w-md space-y-2 sm:space-y-4"
                 >
                   <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span>Uploading...</span>
+                    <span>
+                      {isLoading || uploadProgress === 100
+                        ? "Finalizing..."
+                        : "Uploading..."}
+                    </span>
                     <span>{Math.round(uploadProgress)}%</span>
                   </div>
                   <Progress
@@ -159,20 +214,42 @@ const UploadDropzone = ({
                     indicatorColor={
                       uploadProgress === 100
                         ? "bg-green-500"
-                        : "bg-gradient-to-r from-blue-500 to-purple-500"
+                        : "bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse"
                     }
                   />
 
-                  {isLoading || uploadProgress === 100 ? (
+                  {isUploading &&
+                    uploadProgress > 50 &&
+                    uploadProgress < 100 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-[10px] text-gray-500 text-center"
+                      >
+                        This might take a moment. Please be patient.
+                      </motion.div>
+                    )}
+
+                  {/* {isLoading && uploadProgress > 50 && (
                     <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center justify-center gap-2 text-sm text-gray-600"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-xs text-gray-500 text-center"
                     >
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Processing your document...
+                      This might take a moment. Please be patient.
                     </motion.div>
-                  ) : null}
+                  )} */}
+
+                  {/* {isLoading || uploadProgress === 100 ? (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center justify-center gap-2 text-xs text-gray-600"
+                      >
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing your document...
+                      </motion.div>
+                    ) : null} */}
                 </motion.div>
               )}
 
@@ -189,16 +266,16 @@ const UploadButton = ({ isSubscribed }: { isSubscribed: boolean }) => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<boolean>(false);
 
   const { mutate: startPolling, isLoading } = trpc.getFile.useMutation({
     onSuccess: (file) => {
       router.push(`/dashboard/${file.id}`);
-      setIsOpen(false);
     },
     onError: (error) => {
       console.error("Error fetching file:", error);
       setIsUploading(false);
-      setIsOpen(false);
+      // setIsOpen(false);
 
       if (error.data?.code === "UNAUTHORIZED") {
         toast.error("Unauthorized", {
@@ -226,8 +303,25 @@ const UploadButton = ({ isSubscribed }: { isSubscribed: boolean }) => {
     retryDelay: (attempt) => attempt * 500,
   });
 
+  const handleOpenChange = (open: boolean) => {
+    if (isUploading || isLoading) {
+      toast.info("Upload in progress", {
+        description: "Please wait until the upload completes before closing.",
+      });
+      return;
+    }
+
+    if (open) {
+      // Reset states when opening
+      setUploadError(false);
+      // setUploadProgress(0);
+    }
+
+    setIsOpen(open);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
           <Button
@@ -273,18 +367,25 @@ const UploadButton = ({ isSubscribed }: { isSubscribed: boolean }) => {
           isUploading={isUploading}
           setIsUploading={setIsUploading}
           startPolling={startPolling}
+          uploadError={uploadError}
+          setUploadError={setUploadError}
         />
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex items-center gap-2 text-xs text-gray-500 md:mt-2"
+          className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between text-[10px] text-gray-500 md:mt-2"
         >
-          <Zap className="h-3 w-3 text-yellow-500" />
-          <span>AI-powered document analysis</span>
-          <Sparkles className="h-3 w-3 text-purple-500 ml-2" />
-          <span>Instant insights</span>
+          <div className="flex items-center gap-1">
+            <Zap className="size-2 sm:size-3 text-yellow-500" />
+            <span>AI-powered document analysis</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Sparkles className="size-2 sm:size-3 text-purple-500" />
+            <span>Instant insights</span>
+          </div>
         </motion.div>
       </DialogContent>
     </Dialog>
