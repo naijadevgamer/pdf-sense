@@ -54,7 +54,7 @@ export default function NavbarClient({ user }: { user: User }) {
             >
               <div className="relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-                <h1 className="relative text-2xl font-bold bg-gradient-to-r text- from-blue-600 to-purple-600 text-transparent bg-clip-text">
+                <h1 className="relative text-xl sm:text-2xl font-bold bg-gradient-to-r text- from-blue-600 to-purple-600 text-transparent bg-clip-text">
                   PDFSense.
                 </h1>
               </div>
